@@ -132,23 +132,45 @@
   -webkit-print-color-adjust:exact;print-color-adjust:exact}
 .doc *{box-sizing:border-box}
 .doc .cover{border-left:7px solid #0D47A1;padding:8px 0 8px 14px;margin-bottom:9px}
-.doc .eyebrow{font-size:9pt;color:#1565C0;letter-spacing:2px;margin-bottom:3px}
+.doc .eyebrow{font-size:9pt;color:#1565C0;letter-spacing:1px;margin-bottom:3px}
 .doc .cover .title{font-size:16pt;font-weight:800;line-height:1.35;color:#0D47A1}
 .doc .cover .subtitle{font-size:10pt;color:#444;margin-top:5px}
 .doc .cover .meta{font-size:8.6pt;color:#888;margin-top:6px;line-height:1.6}
 .doc h2.sec{font-size:12.5pt;font-weight:800;color:#0D47A1;border-bottom:2.5px solid #0D47A1;
   padding-bottom:3px;margin:11px 0 5px;page-break-after:avoid}
+.doc h3.sub{font-size:10.6pt;font-weight:700;color:#0D47A1;margin:7px 0 3px;padding-left:8px;
+  border-left:4px solid #1976D2;page-break-after:avoid}
 .doc p{margin:3px 0;text-align:justify}
+.doc .indent{text-indent:2em}
 .doc table{width:100%;border-collapse:collapse;margin:5px 0 8px;font-size:9pt}
 .doc th,.doc td{border:1px solid #b9c8e0;padding:4px 6px;vertical-align:top;text-align:left}
-.doc th{background:#0D47A1;color:#fff;font-weight:700}
-.doc tr:nth-child(even) td{background:#eef3fb}
-.doc .kv th{width:28%}
+.doc thead th{background:#0D47A1;color:#fff;font-weight:700}
+.doc tbody tr:nth-child(even) td{background:#eef3fb}
+.doc table.kv-table tbody th{background:#0D47A1;color:#fff;width:28%;font-weight:700}
+.doc .abstract{background:#eef3fb;border:1px solid #c9d6ec;border-radius:5px;padding:6px 10px;margin:5px 0 8px}
+.doc .abstract b{color:#0D47A1}
+.doc .toc{background:#f7f9fd;border:1px dashed #b9c8e0;border-radius:5px;padding:6px 10px;margin:5px 0 9px;
+  font-size:9pt;line-height:1.65;color:#334}
+.doc .toc b{color:#0D47A1}
+.doc .coop-card{border:1px solid #c9d6ec;border-radius:6px;margin:5px 0;overflow:hidden}
+.doc .coop-card .head{background:linear-gradient(90deg,#0D47A1,#1976D2);color:#fff;font-weight:700;
+  font-size:10.2pt;padding:3px 9px;page-break-after:avoid}
+.doc .coop-card .body{padding:4px 9px 5px}
+.doc .coop-card .row{display:flex;gap:7px;margin:2px 0}
+.doc .coop-card .tag{flex:0 0 62px;font-weight:700;color:#1565C0;font-size:9.1pt;padding-top:1px}
+.doc .coop-card .val{flex:1}
+.doc .coop-card .path{background:#e8f5e9;border-left:3px solid #2E7D32;padding:3px 7px;margin-top:3px;font-size:9.1pt}
+.doc .coop-card .path b{color:#2E7D32}
+.doc .coop-card .dept{color:#555;font-size:8.8pt;margin-top:2px}
+.doc .coop-card .dept b{color:#0D47A1}
+.doc ol.tight,.doc ul.tight{margin:3px 0 5px;padding-left:20px}
+.doc ol.tight li,.doc ul.tight li{margin:2px 0;text-align:justify}
 .doc .note{font-size:8.6pt;color:#777;margin-top:9px;border-top:1px dashed #ccc;padding-top:5px;line-height:1.6}
 .doc .seal{display:inline-block;background:#E3F2FD;color:#0D47A1;border-radius:10px;padding:1px 8px;font-size:8.8pt;font-weight:700}
 .doc .flag{background:#e8f5e9;border-left:3px solid #2E7D32;padding:4px 8px;margin:4px 0;font-size:9pt}
 @page{size:A4;margin:12mm 13mm}
-@media screen and (max-width:600px){.doc{font-size:11pt}.doc table{font-size:10pt}.doc .cover .title{font-size:17pt}}
+@media screen and (max-width:600px){.doc{font-size:11pt}.doc table{font-size:10pt}.doc .cover .title{font-size:17pt}
+  .doc .coop-card .tag{flex:0 0 56px}.doc .toc{line-height:1.8}}
     .brief{display:flex;gap:10px;align-items:flex-start;background:var(--brand-soft);
       border:1px solid var(--brand-line);border-radius:12px;padding:11px 12px;margin-top:12px}
     .brief__ic{font-size:20px;line-height:1.2}
@@ -157,6 +179,8 @@
     .brief__pill{display:inline-block;background:var(--ok-soft);color:#13683a;font-size:10.5px;
       font-weight:600;border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:1px}
     .brief__desc{font-size:12px;color:var(--ink-2);margin-top:4px;line-height:1.5}
+    .brief__toc{font-size:11px;color:var(--brand);margin-top:6px;line-height:1.6;
+      background:#fff;border:1px dashed var(--brand-line);border-radius:8px;padding:7px 9px;word-break:break-all}
     .sheet--doc .doc{flex:1;overflow:auto;max-height:54vh;padding:10px 8px;
       border:1px solid var(--line);border-radius:9px;background:#fff}
   </style>
@@ -206,12 +230,13 @@
         <div class="brief" id="briefBar" style="display:none">
           <div class="brief__ic">📄</div>
           <div class="brief__main">
-            <div class="brief__ttl">业务合作参阅材料 <span class="brief__pill">已连带生成</span></div>
+            <div class="brief__ttl">业务合作参阅材料 <span class="brief__pill">已生成详细版</span></div>
             <div class="brief__desc" id="briefDesc"></div>
+            <div class="brief__toc" id="briefToc"></div>
           </div>
         </div>
         <div class="btn-row" id="briefActions" style="display:none">
-          <button class="btn btn-ghost" id="viewBrief">查看材料</button>
+          <button class="btn btn-ghost" id="viewBrief">查看详细材料</button>
           <button class="btn btn-ghost" id="downloadBrief">下载材料</button>
         </div>
         <div class="btn-row" id="resultActions" style="display:none">
@@ -227,7 +252,7 @@
           <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
           <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合腾讯地图公开位置实测匹配留存。</li>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
-          <li>查询成功后可连带生成《业务合作参阅材料》（行内参考），含机构定位、就近网点与工作提示，支持查看、复制与下载。</li>
+          <li>查询成功后连带生成《业务合作参阅材料》（详细版 · 行内参考），含业务研判、服务能力、合作方向、走访提纲与合规提示，支持查看、复制与下载打印；位置与网点信息仅列于附录 A。</li>
         </ul>
       </section>
     </main>
@@ -250,10 +275,11 @@
   <!-- 参阅材料预览 -->
   <div class="mask" id="briefMask">
     <div class="sheet sheet--doc">
-      <h3>业务合作参阅材料（行内参考）</h3>
+      <h3>业务合作参阅材料（详细版 · 行内参考）</h3>
       <div class="doc" id="briefPreview"></div>
       <div class="sheet__btns">
         <button class="btn btn-primary" id="copyBrief">复制全文</button>
+        <button class="btn btn-ghost" id="printBrief">下载/打印</button>
         <button class="btn btn-ghost" id="closeBrief">关闭</button>
       </div>
     </div>
@@ -281,7 +307,7 @@
     })();
     var lastBackend = null;
     var lastQuery = null;                 // 最近一次查询上下文，供参阅材料编制使用
-    var DOC_CSS = ".doc{font-family:\"Microsoft YaHei\",\"微软雅黑\",\"Source Han Sans SC\",\"Noto Sans CJK SC\",SimSun,sans-serif;\n  color:#1a1a1a;font-size:9.8pt;line-height:1.42;background:#fff;\n  -webkit-print-color-adjust:exact;print-color-adjust:exact}\n.doc *{box-sizing:border-box}\n.doc .cover{border-left:7px solid #0D47A1;padding:8px 0 8px 14px;margin-bottom:9px}\n.doc .eyebrow{font-size:9pt;color:#1565C0;letter-spacing:2px;margin-bottom:3px}\n.doc .cover .title{font-size:16pt;font-weight:800;line-height:1.35;color:#0D47A1}\n.doc .cover .subtitle{font-size:10pt;color:#444;margin-top:5px}\n.doc .cover .meta{font-size:8.6pt;color:#888;margin-top:6px;line-height:1.6}\n.doc h2.sec{font-size:12.5pt;font-weight:800;color:#0D47A1;border-bottom:2.5px solid #0D47A1;\n  padding-bottom:3px;margin:11px 0 5px;page-break-after:avoid}\n.doc p{margin:3px 0;text-align:justify}\n.doc table{width:100%;border-collapse:collapse;margin:5px 0 8px;font-size:9pt}\n.doc th,.doc td{border:1px solid #b9c8e0;padding:4px 6px;vertical-align:top;text-align:left}\n.doc th{background:#0D47A1;color:#fff;font-weight:700}\n.doc tr:nth-child(even) td{background:#eef3fb}\n.doc .kv th{width:28%}\n.doc .note{font-size:8.6pt;color:#777;margin-top:9px;border-top:1px dashed #ccc;padding-top:5px;line-height:1.6}\n.doc .seal{display:inline-block;background:#E3F2FD;color:#0D47A1;border-radius:10px;padding:1px 8px;font-size:8.8pt;font-weight:700}\n.doc .flag{background:#e8f5e9;border-left:3px solid #2E7D32;padding:4px 8px;margin:4px 0;font-size:9pt}\n@page{size:A4;margin:12mm 13mm}\n@media screen and (max-width:600px){.doc{font-size:11pt}.doc table{font-size:10pt}.doc .cover .title{font-size:17pt}}";
+    var DOC_CSS = ".doc{font-family:\"Microsoft YaHei\",\"微软雅黑\",\"Source Han Sans SC\",\"Noto Sans CJK SC\",SimSun,sans-serif;\n  color:#1a1a1a;font-size:9.8pt;line-height:1.42;background:#fff;\n  -webkit-print-color-adjust:exact;print-color-adjust:exact}\n.doc *{box-sizing:border-box}\n.doc .cover{border-left:7px solid #0D47A1;padding:8px 0 8px 14px;margin-bottom:9px}\n.doc .eyebrow{font-size:9pt;color:#1565C0;letter-spacing:1px;margin-bottom:3px}\n.doc .cover .title{font-size:16pt;font-weight:800;line-height:1.35;color:#0D47A1}\n.doc .cover .subtitle{font-size:10pt;color:#444;margin-top:5px}\n.doc .cover .meta{font-size:8.6pt;color:#888;margin-top:6px;line-height:1.6}\n.doc h2.sec{font-size:12.5pt;font-weight:800;color:#0D47A1;border-bottom:2.5px solid #0D47A1;\n  padding-bottom:3px;margin:11px 0 5px;page-break-after:avoid}\n.doc h3.sub{font-size:10.6pt;font-weight:700;color:#0D47A1;margin:7px 0 3px;padding-left:8px;\n  border-left:4px solid #1976D2;page-break-after:avoid}\n.doc p{margin:3px 0;text-align:justify}\n.doc .indent{text-indent:2em}\n.doc table{width:100%;border-collapse:collapse;margin:5px 0 8px;font-size:9pt}\n.doc th,.doc td{border:1px solid #b9c8e0;padding:4px 6px;vertical-align:top;text-align:left}\n.doc thead th{background:#0D47A1;color:#fff;font-weight:700}\n.doc tbody tr:nth-child(even) td{background:#eef3fb}\n.doc table.kv-table tbody th{background:#0D47A1;color:#fff;width:28%;font-weight:700}\n.doc .abstract{background:#eef3fb;border:1px solid #c9d6ec;border-radius:5px;padding:6px 10px;margin:5px 0 8px}\n.doc .abstract b{color:#0D47A1}\n.doc .toc{background:#f7f9fd;border:1px dashed #b9c8e0;border-radius:5px;padding:6px 10px;margin:5px 0 9px;\n  font-size:9pt;line-height:1.65;color:#334}\n.doc .toc b{color:#0D47A1}\n.doc .coop-card{border:1px solid #c9d6ec;border-radius:6px;margin:5px 0;overflow:hidden}\n.doc .coop-card .head{background:linear-gradient(90deg,#0D47A1,#1976D2);color:#fff;font-weight:700;\n  font-size:10.2pt;padding:3px 9px;page-break-after:avoid}\n.doc .coop-card .body{padding:4px 9px 5px}\n.doc .coop-card .row{display:flex;gap:7px;margin:2px 0}\n.doc .coop-card .tag{flex:0 0 62px;font-weight:700;color:#1565C0;font-size:9.1pt;padding-top:1px}\n.doc .coop-card .val{flex:1}\n.doc .coop-card .path{background:#e8f5e9;border-left:3px solid #2E7D32;padding:3px 7px;margin-top:3px;font-size:9.1pt}\n.doc .coop-card .path b{color:#2E7D32}\n.doc .coop-card .dept{color:#555;font-size:8.8pt;margin-top:2px}\n.doc .coop-card .dept b{color:#0D47A1}\n.doc ol.tight,.doc ul.tight{margin:3px 0 5px;padding-left:20px}\n.doc ol.tight li,.doc ul.tight li{margin:2px 0;text-align:justify}\n.doc .note{font-size:8.6pt;color:#777;margin-top:9px;border-top:1px dashed #ccc;padding-top:5px;line-height:1.6}\n.doc .seal{display:inline-block;background:#E3F2FD;color:#0D47A1;border-radius:10px;padding:1px 8px;font-size:8.8pt;font-weight:700}\n.doc .flag{background:#e8f5e9;border-left:3px solid #2E7D32;padding:4px 8px;margin:4px 0;font-size:9pt}\n@page{size:A4;margin:12mm 13mm}\n@media screen and (max-width:600px){.doc{font-size:11pt}.doc table{font-size:10pt}.doc .cover .title{font-size:17pt}\n  .doc .coop-card .tag{flex:0 0 56px}.doc .toc{line-height:1.8}}";
 
     function $(id){ return document.getElementById(id); }
     var orgNameInput=$("orgName"), searchBtn=$("searchBtn"), refreshBtn=$("refreshBtn"),
@@ -401,97 +427,531 @@
       return items;
     }
 
-    // ===== 参阅材料编制 =====
-    // 规范来源：fjhx-doc-pipeline（style-guide.md 品牌排版 / department-map.md 部门口径 /
-    // SKILL.md「已落地 vs 待落地」分节要求）。页面仅使用查询可核验数据，不臆造合作事实、
-    // 不写入财务指标与成效预测；承接主体统一「总行公司金融部」。
+        // ===== 业务合作参阅材料（详细版 · 2026-11-05 用户要求）=====
+    // 编制规范固化自 fjhx-doc-pipeline：style-guide.md（品牌排版）、department-map.md（部门口径）、
+    // report-template.html（五段式合作方向卡片）。主体为「机构业务研判 + 服务方案 + 走访组织」，
+    // 地址、坐标与网点仅作为附录 A 的客观查询数据，不再作为材料主体。
+    // 合规边界：仅使用查询可核验数据 + 同类机构通用业务场景（一律标注「研判 / 待核实」）；
+    // 不臆造合作事实与机构详情、不写财务指标与成效预测、不写服务承诺与授信意向；
+    // 「已核验」与「研判」「待落地」严格分节；通篇标注「行内参考 请勿外传」。
+    var CN_NUM=["一","二","三","四","五","六","七","八"];
+    var CIRC_NUM=["①","②","③","④","⑤"];
+    var DEPT_LINE="总行公司金融部（牵头）；总行相关部门、属地经营机构（配合）";
+    var BRIEF_SHORT=["编制说明","属性研判","场景图谱","服务能力","合作方向","走访提纲","推进路径","核实清单","合规提示","附A 就近网点","附B 资料来源"];
+    function E(x){ return esc(x==null?"":String(x)); }
+    function stripTags(s){ return String(s==null?"":s).replace(/<[^>]*>/g,""); }
+
+    // —— 机构类别知识库：按名称关键词研判，仅用于选取「同类机构通用业务场景」，不构成该单位事实 ——
+    var ORG_PROFILES=[
+      {k:"finreg",re:/(人民银行|央行|金融监管|监管局|银保监|证监|外汇管理)/,
+       label:"金融管理与监管类机构（研判）",
+       field:"区域金融管理、行业监管协调、政策传导与机关经费管理",
+       scenes:[
+         ["机关经费与账户管理","日常经费拨付、账户核算与年度对账","单位银行结算账户、支付结算、对账单与电子回单","预算单位属性与开户审批链条"],
+         ["资金存放","阶段性闲置资金按规定规范存放","单位定期存款、协定存款等资金存放类产品","资金存放决策程序与竞争性选择安排"],
+         ["人员经费发放","在职人员工资与补贴发放","批量代发、回盘核对与数据加密传输","发放范围、频次与数据交接方式"],
+         ["调研与会议保障","行业调研、培训及会议相关费用结算","费用结算、票据与报销配套服务","是否存在指定办理渠道或采购安排"],
+         ["信息报送与协同","按监管要求配合数据核对与资料报送","账户信息与回单资料的规范提供","报送口径、授权范围与信息安全要求"]
+       ],
+       special:{t:"政策沟通与合规口径衔接",need:"政策传导与业务合规口径需保持统一，涉及账户与结算事项需明确边界",
+         ability:"按监管要求提供账户、结算与资料核对等常规服务，口径由总行统一归口",
+         actions:["将对接事项限定在账户与结算等常规服务范围","核实该机构是否存在指定业务办理渠道","所有对外口径经总行公司金融部与总行相关部门确认后使用"],
+         path:"先核实事项边界 → 再按制度报审 → 不开展超出常规服务范围的任何表述"},
+       verify:[["该机构是否对合作银行有指定或备案要求","主管部门公开文件与正式函件"],
+               ["交流事项是否涉及监管敏感信息","行内合规审查口径"]],
+       talk:"请确认本次交流是否限于常规账户与结算服务，以及需由哪一部门归口对接。"},
+      {k:"fiscal",re:/(财政|税务|审计|国库|政府采购)/,
+       label:"财政、税务、审计类机关（研判）",
+       field:"预算管理、非税收入征管、资金存放、政府采购与财政监督",
+       scenes:[
+         ["预算资金拨付与留存","预算经费到账、账户核算与月度对账","单位银行结算账户、专户管理、对账单与电子回单","是否已纳入集中支付、开户是否需主管部门审批"],
+         ["非税收入与行政事业性收费","款项归集、缴库与票据流转","收款结算与对账服务（须具备相应业务资格与系统条件）","收缴方式、代理资格与系统接口要求"],
+         ["资金存放管理","按规定的竞争性选择程序确定存放安排","单位定期存款、协定存款等资金存放类产品","本期存放计划、竞争性选择文件与评分办法"],
+         ["工资与补贴发放","在职及离退休人员经费发放","批量代发、回盘核对与数据加密传输","发放名单口径与数据交接方式"],
+         ["政府采购与项目资金","采购款项支付、履约保证金管理","支付结算、保证金相关服务（按业务授权）","采购流程、支付节点与保证金管理要求"]
+       ],
+       special:{t:"预算单位账户体系规范衔接",need:"预算单位账户开立、变更与年检需与主管部门管理规定相衔接",
+         ability:"单位银行结算账户与专户管理、对账回单、对公网银等通用服务",
+         actions:["梳理该单位现有账户类型与开户审批链条（待核实）","按现行制度准备开户资料清单与尽职调查要求","由总行公司金融部会同属地经营机构明确柜面承接安排"],
+         path:"资料核实 → 制度比对 → 资料准备 → 依程序申请；任何开户事项以主管部门审批与本行制度为准"},
+       verify:[["是否纳入国库集中支付及相关代理资格要求","财政主管部门公开文件"],
+               ["财政资金存放竞争性选择的届期与参与方式","主管部门公开公告"]],
+       talk:"请介绍本年度预算单位账户管理与资金存放的程序性安排，便于按制度准备资料。"},
+      {k:"education",re:/(大学|学院|学校|中学|小学|幼儿园|教育厅|教育局|教育委员会|党校|职业技术|技师)/,
+       label:"教育类事业单位 / 教育行政主管部门（研判）",
+       field:"教学管理、收费管理、经费收支、基建采购与师生服务",
+       scenes:[
+         ["收费归集","学费、住宿费及服务性收费的收缴与对账","收款结算、批量扣收与电子回单（按业务条件）","收费项目、收缴渠道与票据管理要求"],
+         ["财政拨款与专项经费","生均经费、专项补助到账与专款核算","单位银行结算账户、专户管理与对账","拨款层级、专款专用与核算口径"],
+         ["人员经费发放","教职工工资、绩效及学生奖助资金发放","批量代发、回盘核对与数据安全管理","发放对象、频次与数据交接方式"],
+         ["基建与采购付款","校舍修缮、设备采购款项支付","支付结算、履约保证金相关服务","采购流程与资金支付审批链条"],
+         ["后勤与附属单位资金","食堂、后勤及附属单位资金归集","账户体系梳理与资金归集服务","附属单位法人资格与账户开立情况"]
+       ],
+       special:{t:"收费归集与对账机制衔接",need:"收费笔数多、周期集中，对到账核对与差错处理要求较高（研判）",
+         ability:"收款结算、电子回单与对账服务，配合建立对账与差错处理机制",
+         actions:["核实收费渠道、票据与对账现状","明确系统对接条件与数据安全要求","形成对账频次与差错处理方案后按流程报审"],
+         path:"需求核实 → 制度与系统条件比对 → 方案报审 → 试运行；不对系统对接结果作预先承诺"},
+       verify:[["收费项目与收缴渠道是否已有统一安排","主管部门文件与该单位财务部门"],
+               ["附属单位是否独立核算、是否需分别开立账户","该单位财务部门与登记资料"]],
+       talk:"请介绍收费收缴与对账的现有流程，以及本学期集中收费的时间安排。"},
+      {k:"health",re:/(医院|卫生院|卫生健康|卫健|疾控|疾病预防|医疗保障局|医保局|妇幼|血站|急救)/,
+       label:"卫生健康类事业单位 / 行政主管部门（研判）",
+       field:"医疗服务、收费结算、经费管理、采购付款与绩效发放",
+       scenes:[
+         ["收费结算","门诊与住院费用结算、日终对账","收款结算、电子回单与对账服务","收费渠道、结算周期与票据要求"],
+         ["财政拨款与专项补助","补助资金到账与专款核算","单位银行结算账户、专户管理与对账","拨款层级与专款专用要求"],
+         ["人员经费发放","工资、绩效与夜班等补助发放","批量代发、回盘核对与数据安全管理","发放口径、频次与数据交接方式"],
+         ["药品耗材与设备采购","采购款项支付与履约保证金管理","支付结算、保证金相关服务（按业务授权）","采购流程、支付节点与审批链条"],
+         ["基建与修缮资金","院区改造与修缮款项支付","专户管理与支付结算","项目资金来源与监管要求"]
+       ],
+       special:{t:"收费结算与票据对账衔接",need:"结算笔数大、对账频率高，需稳定的回单与差错处理安排（研判）",
+         ability:"收款结算、电子回单、对账与运营支持服务",
+         actions:["核实结算渠道与日终对账流程","明确回单格式、对账频次与差错处理责任","必要时由总行相关部门评估系统对接条件"],
+         path:"流程核实 → 运营方案准备 → 合规审查 → 试运行；不预设系统对接可行性"},
+       verify:[["收费结算渠道是否已由主管部门统一指定","主管部门公开文件"],
+               ["专项资金是否需单独开户与专款核算","该单位财务部门与项目文件"]],
+       talk:"请介绍现行收费结算与日终对账流程，以及需要银行侧配合的环节。"},
+      {k:"civil",re:/(民政|人力资源|人社|退役军人|就业|人才服务|救助|福利|养老|殡葬)/,
+       label:"民政与人力资源类机关 / 事业单位（研判）",
+       field:"社会救助、优抚安置、就业服务、专项资金与补贴发放",
+       scenes:[
+         ["补贴与救助资金发放","各类补贴、救助资金按批次发放","批量代发、回盘核对与发放结果反馈","发放对象范围、批次与名单管理口径"],
+         ["单位经费与核算","日常经费拨付、账户核算与对账","单位银行结算账户、支付结算与电子回单","预算单位属性与开户审批链条"],
+         ["专项资金管理","专项补助资金到账与专款核算","专户管理、对账与支付结算","资金来源、使用范围与监管要求"],
+         ["服务采购付款","购买服务、设施维护款项支付","支付结算与履约保证金相关服务","采购流程与资金支付审批链条"],
+         ["捐赠与活动经费","捐赠资金接收、活动经费结算","账户管理、收款结算与回单","捐赠资金管理口径与票据要求"]
+       ],
+       special:{t:"批量发放与回盘核对机制衔接",need:"发放对象分散、批次多，对发放成功率与回盘核对要求较高（研判）",
+         ability:"批量代发、回盘核对、差错处理与数据安全管理",
+         actions:["核实发放文件格式、频次与数据交接方式","明确失败款项退回与二次发放流程","完成协议与数据安全合规审查后试运行"],
+         path:"需求核实 → 协议与数据合规审查 → 试运行 → 常态运行"},
+       verify:[["各类补贴资金的发放依据与审批链条","主管部门制度文件"],
+               ["发放数据交接的信息安全要求","该单位与行内信息安全规定"]],
+       talk:"请介绍补贴发放的批次安排、数据交接方式与回盘核对要求。"},
+      {k:"justice",re:/(法院|检察院|司法|公安|监狱|戒毒|仲裁|纪检监察|纪委|政法委)/,
+       label:"政法类机关（研判）",
+       field:"执法办案、机关经费、涉案与执行款管理、诉讼费收缴",
+       scenes:[
+         ["机关经费与账户管理","日常经费拨付、账户核算与对账","单位银行结算账户、支付结算与电子回单","预算单位属性与开户审批链条"],
+         ["涉案与执行款管理","按规定对特定款项实行专户管理","专户管理与资金监管服务（须具备明确依据与业务授权）","有权机关的指定条件、账户性质与管理规则"],
+         ["诉讼费与罚没款项","款项收缴、归集与上划","收款结算与对账服务（按业务资格）","收缴渠道、缴库流程与系统接口要求"],
+         ["人员经费发放","工资、津贴与补助发放","批量代发与回盘核对","发放范围与数据交接方式"],
+         ["采购与装备付款","装备购置、技术服务款项支付","支付结算与保证金相关服务","采购流程与资金支付审批链条"]
+       ],
+       special:{t:"专户与资金监管事项的前置核实",need:"特定款项专户管理须以有权机关规定为前提（研判，不代表该单位存在此类需求）",
+         ability:"单位银行结算账户与专户管理；是否可承接特定监管事项须逐项核实业务授权",
+         actions:["先核实是否存在有权机关指定的账户管理安排","核实账户性质、开立主体与资金流转规则","由总行公司金融部会同总行相关部门完成合规审查后再行报审"],
+         path:"规定依据核实 → 业务授权核实 → 合规审查 → 依正式文件办理；不得预设本行具备特定资格"},
+       verify:[["是否存在有权机关指定的账户管理或平台对接安排","有权机关公开文件与正式函件"],
+               ["涉案款项管理规则与本行业务授权是否匹配","行内制度与法律合规审查意见"]],
+       talk:"请明确是否已有指定的账户管理安排与对接部门，本次交流仅涉及常规账户与结算服务。"},
+      {k:"build",re:/(住房和城乡建设|住建|交通运输|自然资源|生态环境|水利|农业农村|林业|城市管理|规划|园林|市政|公积金)/,
+       label:"建设、交通与资源类机关 / 事业单位（研判）",
+       field:"项目资金管理、工程款支付、行政事业性收费与采购付款",
+       scenes:[
+         ["项目资金拨付","项目资金到账、专款核算与按进度支付","专户管理、支付结算与对账","资金来源、专款专用与支付审批链条"],
+         ["工程款与保证金","工程款项支付、履约与质量保证金管理","支付结算、保证金相关服务（按业务授权）","保证金管理规则与退还条件"],
+         ["行政事业性收费","相关收费收缴、归集与上划","收款结算与电子回单（按业务资格）","收费项目、收缴渠道与缴库流程"],
+         ["人员经费发放","工资与补贴发放","批量代发与回盘核对","发放范围与数据交接方式"],
+         ["采购与维护付款","设备购置、养护服务款项支付","支付结算与履约保证金相关服务","采购流程与资金支付审批链条"]
+       ],
+       special:{t:"项目资金专户与支付衔接",need:"项目资金按进度支付、专款核算，对账户与对账安排要求较高（研判）",
+         ability:"专户管理、支付结算、对账回单与运营支持",
+         actions:["核实项目资金来源、专款专用与监管要求","核实开户主体与支付审批链条","形成账户与对账方案后按流程报审"],
+         path:"依据核实 → 方案准备 → 合规审查 → 依正式文件办理"},
+       verify:[["项目资金是否需单独开立专户","项目批复文件与主管部门规定"],
+               ["保证金管理规则及退还流程","主管部门制度文件"]],
+       talk:"请介绍项目资金的拨付层级、专户管理要求与支付审批流程。"},
+      {k:"economy",re:/(发展和改革|发改委|工业和信息化|工信|商务|市场监督|市场监管|统计|文化和旅游|文旅|体育|广播电视|粮食|招商|供销)/,
+       label:"经济与产业主管部门 / 事业单位（研判）",
+       field:"规划管理、行业管理、市场秩序、活动保障与经费结算",
+       scenes:[
+         ["机关经费与账户管理","日常经费拨付、账户核算与对账","单位银行结算账户、支付结算与电子回单","预算单位属性与开户审批链条"],
+         ["专项工作经费","专项工作、调研活动经费结算","专户管理、支付结算与回单","经费来源、使用范围与报销要求"],
+         ["会议与活动保障","会议、展会及培训相关费用结算","费用结算与票据配套服务","是否纳入政府采购或指定服务商管理"],
+         ["采购付款","设备、服务采购款项支付","支付结算与履约保证金相关服务","采购流程与资金支付审批链条"],
+         ["人员经费发放","工资与补贴发放","批量代发与回盘核对","发放范围与数据交接方式"]
+       ],
+       special:{t:"专项工作经费结算衔接",need:"专项工作与活动经费存在阶段性集中结算需求（研判）",
+         ability:"专户管理、支付结算、回单与对账服务",
+         actions:["核实专项经费来源与使用范围","核实报销与支付审批链条","按制度准备结算服务方案并报审"],
+         path:"经费口径核实 → 结算方案准备 → 合规审查 → 按正式安排办理"},
+       verify:[["专项经费是否需单独核算或专户管理","主管部门制度文件"],
+               ["会议与活动经费是否纳入政府采购","政府采购公开平台"]],
+       talk:"请介绍专项工作经费的结算周期与支付审批要求。"},
+      {k:"group",re:/(工会|共青团|团委|妇联|科协|工商联|文联|侨联|残联|红十字|协会|学会|联合会|商会|基金会|群团)/,
+       label:"群团组织 / 社会团体（研判）",
+       field:"会员服务、活动组织、经费收支与基层组织资金管理",
+       scenes:[
+         ["会费与经费管理","会费、活动经费收缴与账户核算","单位银行结算账户、收款结算与对账","法人登记类型与开户资料要求"],
+         ["活动经费支付","会议、培训与活动费用结算","支付结算与票据配套服务","经费审批链条与报销要求"],
+         ["捐赠与专项经费","捐赠资金接收、专项经费专款核算","账户管理、专户管理与回单","捐赠资金管理口径与票据要求"],
+         ["人员与劳务发放","专职人员工资、劳务报酬发放","批量代发与回盘核对","发放范围与数据交接方式"],
+         ["基层组织资金","下属组织资金归集与核算","账户体系梳理与资金归集服务","下属组织是否独立法人、是否分别开户"]
+       ],
+       special:{t:"基层组织账户体系规范衔接",need:"组织层级较多、账户主体不一，需先梳理账户关系（研判）",
+         ability:"单位银行结算账户体系梳理、收款结算与对账服务",
+         actions:["核实法人登记类型、下属组织与开户主体","按不同类型准备开户资料与尽职调查要求","形成账户体系梳理清单后按流程报审"],
+         path:"主体核实 → 账户清单梳理 → 制度比对 → 依程序办理"},
+       verify:[["社会团体法人登记类型与主管部门","官方登记资料"],
+               ["下属组织是否独立核算、账户开立现状","该单位财务部门"]],
+       talk:"请介绍本组织及下属机构的账户主体关系与经费管理口径。"},
+      {k:"party",re:/(党委|省委|市委|县委|区委|组织部|宣传部|统战部|机关工委|办公厅|办公室|人民政府|纪检监察)/,
+       label:"党政综合机关（研判）",
+       field:"综合协调、机关运转、会议保障与经费管理",
+       scenes:[
+         ["机关经费与账户管理","日常经费拨付、账户核算与对账","单位银行结算账户、支付结算与电子回单","预算单位属性与开户审批链条"],
+         ["会议与调研保障","会议、调研及培训费用结算","费用结算与票据配套服务","经费审批链条与报销要求"],
+         ["人员经费发放","工资与补贴发放","批量代发与回盘核对","发放范围与数据交接方式"],
+         ["专项工作经费","专项工作经费到账与核算","专户管理与对账","经费来源与使用范围"],
+         ["采购付款","办公设备与服务采购款项支付","支付结算与履约保证金相关服务","采购流程与资金支付审批链条"]
+       ],
+       special:{t:"机关经费结算保障衔接",need:"机关运转对结算时效、回单规范与对账准确性要求较高（研判）",
+         ability:"支付结算、电子回单、对账与运营支持服务",
+         actions:["核实经费拨付层级与账户管理口径","核实报销与支付审批链条","由总行公司金融部统筹明确服务承接安排"],
+         path:"口径核实 → 结算方案准备 → 合规审查 → 按正式安排办理"},
+       verify:[["机关经费拨付层级与账户管理口径","该单位财务部门"],
+               ["会议与调研经费的采购或报销规则","主管部门制度文件"]],
+       talk:"请介绍机关经费结算与对账的现行安排，便于按制度准备服务方案。"},
+      {k:"institution",re:/(中心|站|所|馆|台|社|院|事务|服务|管理局|委员会)/,
+       label:"事业单位 / 管理服务机构（研判）",
+       field:"公共服务、事务管理、收费与经费收支",
+       scenes:[
+         ["财政拨款与经费到账","拨款到账、账户核算与对账","单位银行结算账户、支付结算与电子回单","拨款层级与预算单位属性"],
+         ["服务性收费","服务收费收缴、归集与上划","收款结算与电子回单（按业务资格）","收费项目、收缴渠道与缴库流程"],
+         ["人员经费发放","工资、绩效与劳务报酬发放","批量代发与回盘核对","发放范围与数据交接方式"],
+         ["采购付款","设备与服务采购款项支付","支付结算与保证金相关服务","采购流程与资金支付审批链条"],
+         ["专项资金管理","专项补助资金到账与专款核算","专户管理与对账","资金来源、使用范围与监管要求"]
+       ],
+       special:{t:"单位账户与收费结算衔接",need:"既有财政拨款又有服务性收费，需分别核对入账与对账口径（研判）",
+         ability:"单位银行结算账户、收款结算、回单与对账服务",
+         actions:["核实各类资金入账渠道与对账频次","核实收费缴库流程与票据要求","形成账户与对账方案后按流程报审"],
+         path:"资金口径核实 → 方案准备 → 合规审查 → 按正式安排办理"},
+       verify:[["事业单位法人登记与预算管理形式","官方登记资料与主管部门文件"],
+               ["服务性收费的收缴与缴库规则","主管部门制度文件"]],
+       talk:"请介绍本单位各类资金的入账渠道与对账安排。"},
+      {k:"generic",re:/.*/,
+       label:"党政机关 / 事业单位 / 群团组织（类别待核实）",
+       field:"依法履行公共管理与公共服务职能，具体职责以该单位官方公布内容为准",
+       scenes:[
+         ["经费拨付与账户管理","日常经费到账、账户核算与对账","单位银行结算账户、支付结算与电子回单","预算单位属性与开户审批链条"],
+         ["资金存放","阶段性闲置资金按规定规范存放","单位定期存款、协定存款等资金存放类产品","资金存放决策程序与竞争性选择安排"],
+         ["人员经费发放","工资与补贴发放","批量代发与回盘核对","发放范围与数据交接方式"],
+         ["收费与专项资金","收费收缴、专项经费专款核算","收款结算、专户管理与对账","收费项目、资金来源与使用范围"],
+         ["采购付款","设备与服务采购款项支付","支付结算与保证金相关服务","采购流程与资金支付审批链条"]
+       ],
+       special:{t:"机构基础信息核实与对接准备",need:"机构类别与职责范围尚未核实，需先完成基础资料核对（研判）",
+         ability:"按核实结论匹配第四章通用服务类别，暂不作针对性方案表述",
+         actions:["核实机构全称、单位性质、行政层级与主管部门","核实归口管理部门与对接窗口","完成核实后再由总行公司金融部组织方案准备"],
+         path:"基础信息核实 → 类别确认 → 需求梳理 → 方案准备；核实前不形成针对性合作表述"},
+       verify:[["机构全称、单位性质与行政层级","官方登记资料与主管部门公开文件"],
+               ["归口管理部门与对接窗口","主管部门正式函件或公开联系方式"]],
+       talk:"请先确认贵单位全称、归口管理部门与本次交流的事项范围。"}
+    ];
+    function orgProfile(name){
+      var t=String(name||"");
+      for(var i=0;i<ORG_PROFILES.length;i++){ if(ORG_PROFILES[i].re.test(t)) return ORG_PROFILES[i]; }
+      return ORG_PROFILES[ORG_PROFILES.length-1];
+    }
+
+    // ===== 材料基础信息 =====
     function todayStr(){
       var d=new Date(), p=function(n){return (n<10?"0":"")+n;};
       return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
     }
-    function briefTitle(q){ return (q.name||"机构")+" 业务合作参阅材料（就近服务网点信息）"; }
+    function briefTitle(q){ return "关于「"+(q.name||"机构")+"」的业务合作参阅材料"; }
     function regionText(q){
       if(!q.region) return "未识别（按全域网点测算）";
       return [q.region.province,q.region.city,q.region.district].filter(Boolean).join(" / ");
     }
     function posText(q){
       if(q.mode==="precise" && q.geo) return "机构真实坐标（腾讯位置服务地点建议接口实时反查）";
-      if(q.mode==="backend") return "后端实时核验（企查查/天眼查）及服务端地理编码";
+      if(q.mode==="backend") return "后端实时核验及服务端地理编码";
       return "行政区划中心近似（未取得机构真实坐标）";
     }
-    function briefRows(q){
-      var out="";
-      (q.items||[]).slice(0,5).forEach(function(it,i){
+    function branchTableRows(q){
+      return (q.items||[]).slice(0,5).map(function(it,i){
         var b=it.branch||{}, d=(typeof it.dist==="number")?fmtDist(it.dist):(it.distText||"—");
-        out+="<tr><td>"+(i+1)+"</td><td>"+esc(b.name||"—")+"</td><td>"+esc(d)+
-             "</td><td>"+esc(b.address||"地址未收录")+"</td><td>"+esc(b.phone||"—")+"</td></tr>";
+        return [String(i+1),b.name||"—",d,b.address||"地址未收录",b.phone||"—"];
       });
-      return out||"<tr><td colspan='5'>未匹配到网点</td></tr>";
+    }
+    function briefRows(q){
+      var rows=branchTableRows(q);
+      if(!rows.length) return "<tr><td colspan='5'>未匹配到网点</td></tr>";
+      return rows.map(function(r){ return "<tr>"+r.map(function(c){return "<td>"+E(c)+"</td>";}).join("")+"</tr>"; }).join("");
+    }
+    function geoRows(q){
+      var g=q.geo||{}, org=q.org||{}, rows=[];
+      if(q.mode==="precise"&&g.title){
+        rows.push(["地图核验名称",g.title]); rows.push(["地图核验地址",g.address||"接口未返回详细地址"]);
+        rows.push(["核验经纬度",String(g.lat)+", "+String(g.lng)]);
+      }
+      if(q.mode==="backend"&&(org.fullName||org.creditCode)){
+        rows.push(["核验机构全称",org.fullName||"—"]); rows.push(["统一社会信用代码",org.creditCode||"—"]);
+        rows.push(["登记注册地址",org.address||"—"]);
+      }
+      return rows;
+    }
+
+    // ===== 章节内容（一份数据，同时渲染 HTML 预览 / 纯文本复制）=====
+    function commonDirections(p){
+      return [
+        {t:"单位银行结算账户与日常结算服务衔接",
+         need:"日常经费收付、账户管理与对账存在持续性服务需求（研判，待核实）",
+         ability:"单位银行结算账户开立与维护、支付结算、对账单与电子回单、对公网银",
+         actions:["核实现有开户银行、账户类型与开户审批链条","准备开户资料清单、客户身份识别等尽职调查材料","由总行公司金融部会同总行相关部门明确柜面与运营承接安排"],
+         path:"资料核实 → 制度比对 → 资料准备 → 依程序申请；核实前不承诺办理时限或结果"},
+        {t:"资金存放与现金管理（按规定程序）",
+         need:"阶段性闲置资金需按主管部门规定规范存放（研判，待核实）",
+         ability:"单位定期存款、协定存款、通知存款等资金存放类产品及到期兑付安排",
+         actions:["核实资金性质、存放期限要求与决策程序","核实是否须履行竞争性选择或招投标程序并按规定参与","按行内授权另行准备产品要素报批材料，本材料不列示任何价格"],
+         path:"先核实存放规则 → 再按公开程序参与 → 结果以正式文件为准；本材料不构成报价或承诺"},
+        {t:"代发与卡务服务",
+         need:"工资、补贴及劳务报酬等批量发放需要稳定、可核对的发放通道（研判，待核实）",
+         ability:"批量代发、回盘核对、数据加密传输；卡类产品按相应准入条件办理",
+         actions:["核实发放对象范围、频次、文件格式与数据交接方式","签署代发协议并完成数据安全与合规审查","建立差错处理与常态化对账机制"],
+         path:"需求核实 → 协议与数据合规审查 → 试运行 → 常态运行"},
+        {t:p.special.t,need:p.special.need,ability:p.special.ability,actions:p.special.actions,path:p.special.path}
+      ];
+    }
+    function briefSections(q){
+      var p=orgProfile(q.name), n=(q.name||"机构"), S=[];
+      var geo=geoRows(q);
+
+      S.push({t:"一、编制说明与适用口径",
+        intro:"本材料供行内走访与业务对接前参阅，用于明确已知信息、待核实事项与合规边界。",
+        table:{head:["项目","说明"],kv:true,rows:[
+          ["材料名称","关于「"+n+"」的业务合作参阅材料"],
+          ["编制单位","总行公司金融部"],
+          ["使用对象","行内走访与业务对接人员（行内参考 请勿外传）"],
+          ["编制依据","本次查询可核验的机构定位与网点公开信息；同类机构通用业务场景；行内机构业务通用服务类别"],
+          ["信息边界","未开展现场调研，未调取该单位登记资料、预算资料与财务资料；第三、五章为研判内容，非该单位事实"],
+          ["材料性质","走访前参阅，不构成服务承诺、产品报价、授信意向或成效预测"]
+        ]},
+        paras:["全篇将信息分为<b>已核验</b>（查询工具输出）、<b>研判</b>（同类机构通用场景）、<b>待核实 / 待落地</b>（拟开展工作）三类，不得混用。"]});
+
+      S.push({t:"二、机构基本情况与属性研判",
+        intro:"本章区分「已核验」与「研判」两类信息；凡标注研判的内容，均须以该单位官方登记资料与主管部门文件为准。",
+        table:{head:["项目","内容"],kv:true,rows:[
+          ["录入机构名称（已核验）",n]
+        ].concat(geo).concat([
+          ["识别行政区划（查询工具输出）",regionText(q)],
+          ["定位方式（查询工具输出）",posText(q)],
+          ["机构类别（研判）",p.label],
+          ["职能领域（同类机构通常范围，研判）",p.field],
+          ["行政层级与归口（研判）","按名称关键词推断，未核验；须以机构编制、职责规定及主管部门文件为准"],
+          ["现有合作基础","未核验。本材料不认定任何既有合作事实、已达成事项或服务关系"]
+        ])},
+        paras:["<b>研判依据：</b>依据录入名称中的关键词匹配同类机构通用业务场景，用于组织走访准备，不代表该单位的实际职责、业务规模或需求。",
+               "<b>使用要求：</b>对外交流前，须按第八章清单完成逐项核实；未完成核实的，不得将本章研判内容作为事实引用。"]});
+
+      S.push({t:"三、业务场景与金融服务需求图谱",
+        intro:"下表列示「"+p.label+"」同类机构常见业务环节与可能涉及的金融服务，属通用研判，不代表该单位实际业务或实际需要。",
+        table:{head:["业务环节","常见事项","可能涉及的金融服务","需核实事项"],rows:p.scenes},
+        paras:["表中金融服务均为商业银行机构业务<b>通用类别</b>，是否适用须结合该单位主管部门规定、本行业务授权与产品准入条件逐项核实。",
+               "本章不引用任何客户经营数据、财务数据或同业做法，不据此推定该单位存在资金存放、采购或系统对接需求。"]});
+
+      S.push({t:"四、机构业务服务能力（通用清单，须逐项核实）",
+        intro:"以下为可对外介绍之前须逐项核实的通用服务类别，不含产品报价、资质承诺、授信意向或业务规模数据。",
+        table:{head:["服务类别","服务内容（通用）","适用前提 / 需核实事项"],rows:[
+          ["账户与结算","单位银行结算账户（基本、一般、专用、临时）开立与维护，支付结算、票据、对账单与电子回单、对公网银","依法成立并提供完整开户资料；通过客户身份识别与尽职调查；账户用途以开户审批为准"],
+          ["资金存放与现金管理","单位定期存款、协定存款、通知存款、资金归集与到期兑付","资金性质、期限与决策程序合规；涉及财政性资金的，须按规定履行竞争性选择或招投标程序"],
+          ["代发与卡务","工资、补贴、劳务报酬批量代发，回盘核对；卡类产品按相应准入条件办理","签署代发协议；数据交接符合信息安全要求；卡类产品以本行及主管部门准入为准"],
+          ["资金监管与专户管理","依有权机关规定或协议约定开立专户、签订三方监管协议、办理保证金相关业务","具备明确监管依据；协议文本经法律合规审查；不得预设本行具备特定监管资格"],
+          ["渠道与运营保障","营业网点柜面、对公网银、客服与运营支持、按制度提供上门服务","具体服务方式以网点业务范围与行内制度为准"],
+          ["融资及授信类需求","如客户提出融资需求，另行按授信流程受理","本材料不作任何授信意向、额度、条件或时限表述"]
+        ]},
+        paras:["服务渠道可依托本行公开网点目录所列营业网点（共 "+BRANCHES.length+" 家，官网公开信息，具体营业状态以官方公告为准）；具体承接安排由<b>总行公司金融部</b>统筹，属地经营机构按职责配合。"]});
+
+      S.push({t:"五、拟开展合作方向（待落地，非既有合作事实）",
+        intro:"基于第三、四章的通用研判，梳理四项可论证、可分步推进的工作方向；均为拟争取事项，须经核实与报审后方可开展。",
+        flag:"以下方向均为待落地事项，不代表已与该单位建立联系、达成意向或形成任何服务承诺。",
+        cards:commonDirections(p),
+        paras:["各方向按「对象需求 → 银行能力 → 具体合作 → 可行路径 → 建议对接」五段式列示；建议对接统一由<b>总行公司金融部</b>牵头，总行相关部门与属地经营机构配合，不在材料中回指具体网点作为对接主体。"]});
+
+      S.push({t:"六、走访沟通提纲",
+        intro:"以下为沟通顺序与要点，属行内提示；实际交流须使用官方商务语气，不承诺办理结果、不报价、不评价同业。",
+        list:[
+          "<b>开场与身份说明：</b>表明来访单位与人员，说明本次为常规业务交流，不涉及采购决策与结果承诺。",
+          "<b>需求了解：</b>询问归口管理部门、现有账户与结算安排、年度重点工作对资金管理的要求，以听取为主，不预设需求。",
+          "<b>能力介绍：</b>仅介绍第四章已核实可开展的通用服务类别，不引用未核验数据、不作同业比较。",
+          "<b>合规确认：</b>明确开户、资金存放、代发等事项须按主管部门规定及本行制度履行审批、竞争性选择或协议签署程序。",
+          "<b>后续安排：</b>约定资料清单核对与下一次对接方式，由总行公司金融部统一归口，属地经营机构配合承接。",
+          "<b>按机构类型的补充提问：</b>"+E(p.talk)
+        ],
+        paras:["<b>沟通禁语：</b>不承诺开户或业务办理时限，不报价格与利率，不评价同业机构，不引用行内经营数据、客户信息或未公开资料。"]});
+
+      S.push({t:"七、推进路径与责任分工",
+        intro:"按「先核实、再报审、后对接」的顺序组织，各阶段状态均为待启动，本材料不记载任何已落地事项。",
+        table:{head:["阶段","主要动作","牵头","配合","输出物","状态"],rows:[
+          ["1 资料核实","核对机构全称、单位性质、预算单位属性与开户审批链条","总行公司金融部","属地经营机构","核实清单（第八章）","待启动"],
+          ["2 制度比对","比对账户、资金存放、代发等业务的行内制度与监管要求","总行公司金融部","总行相关部门","适用条件清单","待启动"],
+          ["3 方案准备","按核实结果形成服务方案与资料清单，履行内部报审","总行公司金融部","总行相关部门","服务方案（待报审）","待启动"],
+          ["4 对接沟通","按第六章提纲开展走访，记录诉求与需补充资料","总行公司金融部","属地经营机构","走访纪要","待启动"],
+          ["5 合规审查","客户尽职调查、协议文本与数据交接安全审查","总行相关部门","总行公司金融部","审查意见","待启动"],
+          ["6 落地跟踪","依正式文件与协议办理，建立对账与回访机制","属地经营机构","总行公司金融部","办理回执与台账","待启动"]
+        ]},
+        paras:["涉及跨部门事项由<b>总行公司金融部</b>统一归口；本行相关部门按真实职责以「总行相关部门」表述，材料不使用未经确认的机构名称。"]});
+
+      var verifyBase=[
+        ["机构全称、统一社会信用代码与单位性质","官方登记资料 / 机构编制文件"],
+        ["行政层级、主管部门与预算单位属性","主管部门公开文件"],
+        ["现有开户银行、账户类型与开户审批链条","该单位财务部门"],
+        ["资金存放决策程序与竞争性选择 / 招投标安排","主管部门公开公告"],
+        ["代发范围、频次、文件格式与数据交接方式","该单位人事与财务部门"],
+        ["收费及专项资金管理口径","主管部门制度文件"],
+        ["采购与招标信息发布渠道","政府采购公开平台"],
+        ["对接部门、联系人与走访安排","正式函件或主管部门转介"]
+      ];
+      var verifyRows=verifyBase.concat(p.verify).map(function(r,i){
+        return [String(i+1),r[0],r[1],"总行公司金融部 / 属地经营机构","待核实"];
+      });
+      S.push({t:"八、需进一步核实事项清单",
+        intro:"下列事项在走访前逐项核实并留痕；未完成核实前，不得进入方案报审与对外承诺环节。",
+        table:{head:["序号","核实事项","建议核实渠道","责任方","状态"],rows:verifyRows},
+        paras:["核实结果应回填本清单并同步修订第二、三、五章；涉及客户资料的，按行内信息安全与保密要求管理。"]});
+
+      S.push({t:"九、合规与风险提示",
+        intro:"本章为强制性边界要求，适用于材料编制、走访交流与后续方案形成的全过程。",
+        list:[
+          "<b>信息性质：</b>第二、三、五章含研判内容，未经现场核实不得作为事实对外引用。",
+          "<b>已落地与待落地：</b>本材料未认定任何既有合作；所有方向均为待落地，表述须严格区分。",
+          "<b>客户尽职调查：</b>账户开立及业务关系建立须按反洗钱与客户身份识别规定履行审核。",
+          "<b>财政性资金：</b>涉及财政性资金存放的，须按主管部门规定履行竞争性选择或招投标程序，不得作任何形式的结果承诺。",
+          "<b>资质与授权：</b>代理、监管、卡类等业务的资格须逐项核实，不得以本材料推定本行具备相应资格。",
+          "<b>价格与授信：</b>材料不列示利率、报价、额度或授信意向；相关事项另行按授权报批。",
+          "<b>信息与保密：</b>材料含行内工作口径，仅限行内参阅，不得外传或在公开渠道转发；客户资料按信息安全要求管理。",
+          "<b>材料效力：</b>本材料不构成要约、承诺或正式方案，具体合作以双方正式协议、主管部门文件及监管规定为准。"
+        ],
+        paras:["如需形成正式的机构业务合作参阅材料并按行内流程交付可打印文件，应另行开展调研、核验与报审，按行内文档产线办理。"]});
+
+      var locRows=[
+        ["录入机构名称",n],["定位方式",posText(q)],["识别行政区划",regionText(q)]
+      ].concat(geo).concat([
+        ["测算口径","基于经纬度的 Haversine 直线距离估算，非步行或驾车路程"]
+      ]);
+      S.push({t:"附录 A · 就近服务网点与定位信息（客观查询结果）",
+        intro:"本章仅列示查询工具输出的客观位置与网点数据，供走访路线安排参考，不属于合作研判结论；建议动作统一由总行公司金融部统筹、属地经营机构承接。",
+        table:{head:["项目","内容"],kv:true,rows:locRows},
+        extra:'<h3 class="sub">就近网点（按直线距离升序，前 '+Math.min((q.items||[]).length,5)+' 家）</h3>'+
+              '<table class="kv-table"><thead><tr><th style="width:6%">序号</th><th style="width:26%">网点名称</th>'+
+              '<th style="width:14%">直线距离</th><th>网点地址</th><th style="width:16%">公开电话</th></tr></thead><tbody>'+briefRows(q)+'</tbody></table>',
+        textExtra:(function(){
+          var L=["就近网点（按直线距离升序，前 "+Math.min((q.items||[]).length,5)+" 家）："];
+          branchTableRows(q).forEach(function(r){ L.push(r[0]+". "+r[1]+"｜"+r[2]+"｜"+r[3]+"｜"+r[4]); });
+          return L;
+        })()});
+
+      S.push({t:"附录 B · 资料来源与使用说明",
+        table:{head:["项目","说明"],kv:true,rows:[
+          ["机构定位数据","腾讯位置服务地点建议接口（查询时实时返回，仅精确定位模式）；行政区划索引（近似模式）；后端实时核验启用时取自相应核验接口"],
+          ["网点数据","福建海峡银行官网公开网点目录（2026-08-21 版，共 "+BRANCHES.length+" 家），含网点名称、地址与公开电话"],
+          ["距离口径","Haversine 直线距离估算，实际步行或驾车距离可能存在差异"],
+          ["业务内容依据","同类机构通用业务场景与行内机构业务通用服务类别，均为研判 / 通用清单，非该单位事实"],
+          ["使用说明","仅供行内走访前参阅；机构信息以官方登记为准，网点营业状态以官方公告为准；不构成服务承诺或授信意向"],
+          ["编制与密级","编制：总行公司金融部　|　行内参考 请勿外传"]
+        ]}});
+      return S;
+    }
+
+    // ===== 渲染 =====
+    function renderTable(tb){
+      var h='<table class="kv-table"><thead><tr>'+tb.head.map(function(x){return "<th>"+E(x)+"</th>";}).join("")+'</tr></thead><tbody>';
+      tb.rows.forEach(function(r){
+        h+="<tr>"+r.map(function(c,i){ return (tb.kv&&i===0)?"<th>"+E(c)+"</th>":"<td>"+E(c)+"</td>"; }).join("")+"</tr>";
+      });
+      return h+'</tbody></table>';
+    }
+    function renderCards(cards){
+      return cards.map(function(c,i){
+        function row(tag,val){ return '<div class="row"><div class="tag">'+E(tag)+'</div><div class="val">'+E(val)+'</div></div>'; }
+        var acts=(c.actions||[]).map(function(a,j){return (CIRC_NUM[j]||"·")+" "+a;}).join("；");
+        return '<div class="coop-card"><div class="head">方向'+CN_NUM[i]+'　'+E(c.t)+'</div><div class="body">'+
+          row("对象需求",c.need)+row("银行能力",c.ability)+row("具体合作",acts)+
+          '<div class="path"><b>可行路径：</b>'+E(c.path)+'</div>'+
+          '<div class="dept">建议对接：<b>'+E(c.dept||DEPT_LINE)+'</b></div></div></div>';
+      }).join("");
+    }
+    function renderSec(s){
+      var h='<h2 class="sec">'+E(s.t)+'</h2>';
+      if(s.intro) h+='<p class="indent">'+E(s.intro)+'</p>';
+      (s.paras||[]).forEach(function(p){ h+="<p>"+p+"</p>"; });
+      if(s.flag) h+='<div class="flag">'+E(s.flag)+'</div>';
+      if(s.table) h+=renderTable(s.table);
+      if(s.cards) h+=renderCards(s.cards);
+      if(s.list) h+='<ol class="tight">'+s.list.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ol>';
+      if(s.extra) h+=s.extra;
+      return h;
+    }
+    function textSec(s){
+      var L=[s.t];
+      if(s.intro) L.push(s.intro);
+      (s.paras||[]).forEach(function(p){ L.push(stripTags(p)); });
+      if(s.flag) L.push("【提示】"+s.flag);
+      if(s.table) s.table.rows.forEach(function(r,i){
+        L.push(s.table.kv ? (r[0]+"：" +r.slice(1).join("；")) :
+          ((i+1)+". "+r.map(function(c,j){return (s.table.head[j]||"")+"：" +c;}).join("　|　")));
+      });
+      (s.cards||[]).forEach(function(c,i){
+        L.push("方向"+CN_NUM[i]+" "+c.t);
+        L.push("  对象需求："+c.need); L.push("  银行能力："+c.ability);
+        (c.actions||[]).forEach(function(a,j){ L.push("  具体合作"+(CIRC_NUM[j]||"·")+" "+a); });
+        L.push("  可行路径："+c.path); L.push("  建议对接："+(c.dept||DEPT_LINE));
+      });
+      (s.list||[]).forEach(function(x,i){ L.push((i+1)+". "+stripTags(x)); });
+      (s.textExtra||[]).forEach(function(x){ L.push(x); });
+      return L.join("\n");
+    }
+    function briefOutline(q){
+      return briefSections(q).map(function(s){return s.t;});
     }
     function briefFragment(q){
-      var g=q.geo||{}, org=q.org||{};
-      var geoLine=(q.mode==="precise"&&g.title)
-        ? "<tr><th>地图核验名称</th><td>"+esc(g.title)+"</td></tr>"+
-          "<tr><th>地图核验地址</th><td>"+esc(g.address||"接口未返回详细地址")+"</td></tr>"+
-          "<tr><th>核验经纬度</th><td>"+esc(String(g.lat))+", "+esc(String(g.lng))+"</td></tr>"
-        : "";
-      var orgLine=(q.mode==="backend"&&(org.fullName||org.creditCode))
-        ? "<tr><th>核验机构全称</th><td>"+esc(org.fullName||"—")+"</td></tr>"+
-          "<tr><th>统一社会信用代码</th><td>"+esc(org.creditCode||"—")+"</td></tr>"+
-          "<tr><th>登记注册地址</th><td>"+esc(org.address||"—")+"</td></tr>"
-        : "";
-      return ""+
-        '<div class="cover">'+
-          '<div class="eyebrow">福建海峡银行 · 总行公司金融部</div>'+
-          '<div class="title">'+esc(briefTitle(q))+'</div>'+
-          '<div class="subtitle">机构业务走访前参阅 · 基于公开网点信息与地理位置测算</div>'+
-          '<div class="meta">编制日期：'+todayStr()+'　|　数据基准：福建海峡银行官网公开网点目录（2026-08-21 版，共 '+BRANCHES.length+' 家）　|　<span class="seal">行内参考 请勿外传</span></div>'+
-        '</div>'+
-        '<h2 class="sec">一、机构定位信息（查询结果）</h2>'+
-        '<table class="kv">'+
-          '<tr><th>录入机构名称</th><td>'+esc(q.name||"—")+'</td></tr>'+ geoLine + orgLine +
-          '<tr><th>识别行政区划</th><td>'+esc(regionText(q))+'</td></tr>'+
-          '<tr><th>定位方式</th><td>'+esc(posText(q))+'</td></tr>'+
-          '<tr><th>测算口径</th><td>基于经纬度的 Haversine 直线距离估算，非步行或驾车路程</td></tr>'+
-        '</table>'+
-        '<h2 class="sec">二、就近服务网点（客观查询结果）</h2>'+
-        '<p>按直线距离升序，列示距离最近的 '+Math.min((q.items||[]).length,5)+' 家网点；网点名称、地址与公开电话均取自官网公开网点目录。</p>'+
-        '<table><thead><tr><th style="width:6%">序号</th><th style="width:26%">网点名称</th><th style="width:14%">直线距离</th><th>网点地址</th><th style="width:16%">公开电话</th></tr></thead><tbody>'+briefRows(q)+'</tbody></table>'+
-        '<h2 class="sec">三、工作提示（待落地，非既有合作事实）</h2>'+
-        '<div class="flag">以下为可开展的工作方向，不代表既有合作基础、已达成事项或任何服务承诺。</div>'+
-        '<p>1. 就近网点信息可用于走访路线安排与属地服务衔接；相关事项由<b>总行公司金融部</b>统筹，属地经营机构按职责承接。</p>'+
-        '<p>2. 涉及账户开立、资金存放、结算服务等事项，须按行内制度与监管要求履行尽职调查、审批及合规审查程序后办理。</p>'+
-        '<p>3. 本材料不含合作进展、财务数据及成效预测；如需形成正式合作方案，应另行开展调研并按流程报审。</p>'+
-        '<div class="note"><b>资料来源与使用说明：</b>机构地址与坐标取自腾讯位置服务地点建议接口（查询时实时返回）；网点名称、地址及公开电话取自福建海峡银行官网公开网点目录（2026-08-21 版，共 '+BRANCHES.length+' 家）；距离按 Haversine 公式直线估算。本材料仅供行内走访前参阅，不构成服务承诺或授信意向；机构信息以官方登记为准，网点营业状态以官方公告为准。<br><b>编制：总行公司金融部</b>　|　<b>行内参考 请勿外传</b></div>';
+      var p=orgProfile(q.name), ss=briefSections(q);
+      var cover='<div class="cover">'+
+        '<div class="eyebrow">福建海峡银行 · 总行公司金融部　|　机构业务走访参阅</div>'+
+        '<div class="title">'+E(briefTitle(q))+'</div>'+
+        '<div class="subtitle">机构业务研判 · 服务能力清单 · 拟开展合作方向 · 走访组织与合规边界</div>'+
+        '<div class="meta">编制日期：'+todayStr()+'　|　机构类别研判：'+E(p.label)+
+        '　|　数据基准：官网公开网点目录（共 '+BRANCHES.length+' 家）　|　<span class="seal">行内参考 请勿外传</span></div>'+
+        '</div>';
+      var abstract='<div class="abstract"><b>内容提要</b>'+
+        '<p>本材料围绕「'+(q.name||"机构")+'」的机构业务拓展准备编制，共九章、两项附录。主体内容为机构属性研判、同类机构业务场景与金融服务需求图谱、'+
+        '本行机构业务通用服务能力清单、四项拟开展合作方向（五段式）、走访沟通提纲、推进路径与责任分工、需核实事项清单及合规与风险提示；'+
+        '地址、坐标与就近网点仅作为附录 A 的客观查询数据列示。</p>'+
+        '<p><b>材料性质：</b>已核验信息与「研判 / 待落地」内容严格分节；不含财务指标、成效预测、服务承诺与授信意向。</p></div>';
+      var toc='<div class="toc"><b>材料目录</b><br>'+ss.map(function(s){return E(s.t);}).join("<br>")+'</div>';
+      var note='<div class="note"><b>资料来源：</b>机构定位数据取自腾讯位置服务地点建议接口（查询实时返回，仅精确定位模式）；'+
+        '网点名称、地址与公开电话取自福建海峡银行官网公开网点目录（2026-08-21 版，共 '+BRANCHES.length+' 家）；'+
+        '距离为 Haversine 直线估算。业务章节为同类机构通用研判与行内通用服务类别，非该单位事实。<br>'+
+        '<b>使用说明：</b>本材料仅供行内走访前参阅，不构成服务承诺、报价或授信意向；机构信息以官方登记为准，网点营业状态以官方公告为准。<br>'+
+        '<b>编制：总行公司金融部</b>　|　<b>行内参考 请勿外传</b></div>';
+      return cover+abstract+toc+ss.map(renderSec).join("")+note;
     }
     function briefText(q){
-      var g=q.geo||{}, org=q.org||{}, L=[];
+      var p=orgProfile(q.name), L=[];
       L.push("【"+briefTitle(q)+"】");
-      L.push("福建海峡银行 · 总行公司金融部 | 编制日期："+todayStr()+" | 行内参考 请勿外传");
-      L.push(""); L.push("一、机构定位信息（查询结果）");
-      L.push("录入机构名称："+(q.name||"—"));
-      if(q.mode==="precise"&&g.title){ L.push("地图核验名称："+g.title); L.push("地图核验地址："+(g.address||"—")); L.push("核验经纬度："+g.lat+", "+g.lng); }
-      if(q.mode==="backend"&&org.fullName){ L.push("核验机构全称："+org.fullName); L.push("统一社会信用代码："+(org.creditCode||"—")); L.push("登记注册地址："+(org.address||"—")); }
-      L.push("识别行政区划："+regionText(q)); L.push("定位方式："+posText(q));
-      L.push(""); L.push("二、就近服务网点（客观查询结果）");
-      (q.items||[]).slice(0,5).forEach(function(it,i){
-        var b=it.branch||{}, d=(typeof it.dist==="number")?fmtDist(it.dist):(it.distText||"—");
-        L.push((i+1)+". "+(b.name||"—")+"｜"+d+"｜"+(b.address||"地址未收录")+"｜"+(b.phone||"—"));
-      });
-      L.push(""); L.push("三、工作提示（待落地，非既有合作事实）");
-      L.push("1. 就近网点信息可用于走访路线安排与属地服务衔接；相关事项由总行公司金融部统筹，属地经营机构按职责承接。");
-      L.push("2. 涉及账户开立、资金存放、结算服务等事项，须按行内制度与监管要求履行尽职调查、审批及合规审查程序后办理。");
-      L.push("3. 本材料不含合作进展、财务数据及成效预测；如需形成正式合作方案，应另行开展调研并按流程报审。");
+      L.push("福建海峡银行 · 总行公司金融部　|　编制日期："+todayStr()+"　|　行内参考 请勿外传");
+      L.push("机构类别研判："+p.label);
       L.push("");
-      L.push("资料来源：腾讯位置服务地点建议接口；福建海峡银行官网公开网点目录（2026-08-21 版，共 "+BRANCHES.length+" 家）；距离按 Haversine 直线估算，非步行/驾车路程。");
-      L.push("本材料仅供行内走访前参阅，不构成服务承诺或授信意向。编制：总行公司金融部。行内参考 请勿外传。");
+      L.push("【内容提要】本材料共九章、两项附录，主体为机构业务研判、服务需求图谱、服务能力清单、拟开展合作方向、走访提纲、推进路径、核实清单与合规提示；地址、坐标与就近网点仅列于附录 A。已核验与「研判 / 待落地」严格分节，不含财务指标、成效预测、服务承诺与授信意向。");
+      L.push("");
+      L.push("【材料目录】");
+      briefOutline(q).forEach(function(t){ L.push(t); });
+      briefSections(q).forEach(function(s){ L.push(""); L.push(textSec(s)); });
+      L.push("");
+      L.push("资料来源：机构定位取自腾讯位置服务地点建议接口（查询实时返回，仅精确定位模式）；网点信息取自福建海峡银行官网公开网点目录（2026-08-21 版，共 "+BRANCHES.length+" 家）；距离为 Haversine 直线估算。业务章节为同类机构通用研判与行内通用服务类别，非该单位事实。");
+      L.push("使用说明：仅供行内走访前参阅，不构成服务承诺、报价或授信意向；机构信息以官方登记为准，网点营业状态以官方公告为准。");
+      L.push("编制：总行公司金融部　|　行内参考 请勿外传");
       return L.join("\n");
     }
     function renderBriefBar(){
       if(!lastQuery){ briefBar.style.display="none"; briefActions.style.display="none"; return; }
+      var p=orgProfile(lastQuery.name);
       briefBar.style.display="flex"; briefActions.style.display="flex";
-      briefDesc.textContent="已按行内参阅材料体例生成，含机构定位、就近网点与工作提示；可查看、复制或下载。";
-      briefPreview.innerHTML=briefFragment(lastQuery);   // 查询成功即连带生成
+      briefDesc.textContent="已按行内体例生成详细材料（9 章 + 2 附录）：机构属性研判、业务场景需求图谱、服务能力清单、4 项拟开展合作方向、走访提纲、推进路径、核实清单与合规提示；地址与就近网点仅列于附录 A。";
+      var tocEl=$("briefToc");
+      if(tocEl) tocEl.textContent="共 "+BRIEF_SHORT.length+" 节 · "+BRIEF_SHORT.join(" / ")+"　|　类别研判："+p.label;
+      briefPreview.innerHTML=briefFragment(lastQuery);   // 查询成功即连带生成全文
     }
     function downloadBriefFile(){
       if(!lastQuery){ toast("请先查询机构"); return; }
@@ -509,9 +969,14 @@
         a.href=url; a.download="业务合作参阅材料_"+safe+"_"+todayStr()+".html";
         document.body.appendChild(a); a.click();
         setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); },1500);
-        toast("材料已生成并下载");
+        toast("详细材料已生成并下载（可打印为 PDF）");
       }catch(e){ toast("当前浏览器不支持下载，请改用「复制全文」"); }
     }
+    // 预览弹窗内补充「下载 / 打印」入口
+    (function(){
+      var b=$("printBrief");
+      if(b) b.addEventListener("click",downloadBriefFile);
+    })();
 
     function renderResult(items, baseLabel, approxNote){
       resultActions.style.display="flex";
