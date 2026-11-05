@@ -94,10 +94,24 @@ html = r"""<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="format-detection" content="telephone=no">
   <title>最近网点查询</title>
+  <meta name="description" content="输入机构名称，按真实经纬度精确测算最近的福建海峡银行网点。">
   <link rel="icon" href="__ICON_B64__">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="福建海峡银行">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:url" content="https://cjwx-bot.github.io/fjhx-branch-distance/">
   <meta property="og:title" content="最近网点查询">
-  <meta property="og:description" content="福建海峡银行最近网点查询：输入机构名称，按真实经纬度精确测算最近网点。">
-  <meta property="og:image" content="https://map.qq.com/favicon.ico">
+  <meta property="og:description" content="输入机构名称，按真实经纬度精确测算最近的福建海峡银行网点。">
+  <meta property="og:image" content="https://cjwx-bot.github.io/fjhx-branch-distance/share-card.png">
+  <meta property="og:image:secure_url" content="https://cjwx-bot.github.io/fjhx-branch-distance/share-card.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="600">
+  <meta property="og:image:height" content="600">
+  <meta property="og:image:alt" content="最近网点查询 · 福建海峡银行">
+  <meta itemprop="name" content="最近网点查询">
+  <meta itemprop="description" content="输入机构名称，按真实经纬度精确测算最近的福建海峡银行网点。">
+  <meta itemprop="image" content="https://cjwx-bot.github.io/fjhx-branch-distance/share-card.png">
+  <meta name="twitter:card" content="summary">
   <meta name="theme-color" content="#006EFF">
   <style>
     :root{
