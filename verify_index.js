@@ -66,3 +66,51 @@ for(const [txt,expect] of cases){
   const n=nearest(p.center);
   console.log(`  [${txt}]\n    识别:${p.province}/${p.city}/${p.district} (${p.precision})\n    最近:${n.b.name}  ${(n.d/1000).toFixed(2)}km  (期望:${expect})`);
 }
+
+// 4) 参阅材料生成逻辑实跑（不依赖浏览器，注入最小 DOM/依赖桩）
+console.log('\n参阅材料生成实跑：');
+const briefJs = fs.readFileSync(path.join(__dirname, 'brief_doc.js'), 'utf-8');
+const stubEl = () => ({ style:{}, textContent:'', innerHTML:'', value:'',
+  addEventListener(){}, classList:{ add(){}, remove(){}, toggle(){} } });
+const bx = {
+  window:{}, document:{}, $: stubEl,
+  esc: s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
+  fmtDist: m => m<1000 ? Math.round(m)+' 米' : (m/1000).toFixed(1)+' 公里',
+  BRANCHES: {length:91}, DOC_CSS:'', toast(){},
+  briefBar:stubEl(), briefDesc:stubEl(), briefActions:stubEl(), briefPreview:stubEl(), briefMask:stubEl(),
+  lastQuery:null
+};
+vm.createContext(bx);
+try { vm.runInContext(briefJs, bx); } catch(e){ console.log('  片段执行失败:', e.message); process.exitCode=1; }
+const demoItems = [
+  {branch:{name:'福建海峡银行(福州杨桥支行)',address:'福州市鼓楼区某路1号',phone:'0591-88888888'},dist:330},
+  {branch:{name:'福建海峡银行(总行营业部)',address:'福州市台江区江滨中大道356号',phone:'400-893-9999'},dist:2100}
+];
+const demoNames = ['福建省财政厅','人民银行福建省分行','福州大学','福建省总工会','福州市中级人民法院','福建省人民医院','福州市行政服务中心'];
+const frags = {};
+let briefOk = true;
+for (const nm of demoNames){
+  bx.lastQuery = {name:nm, mode:'precise', region:{province:'福建省',city:'福州市',district:'鼓楼区'},
+    geo:{title:nm,address:'福州市鼓楼区示例路1号',lat:26.09,lng:119.29}, items:demoItems};
+  let frag, text, outline;
+  try {
+    frag = vm.runInContext('briefFragment(lastQuery)', bx);
+    text = vm.runInContext('briefText(lastQuery)', bx);
+    outline = vm.runInContext('briefOutline(lastQuery)', bx);
+  } catch(e){ console.log(`  [${nm}] 运行异常:`, e.message); briefOk=false; continue; }
+  frags[nm]=frag;
+  const secs=(frag.match(/<h2 class="sec">/g)||[]).length;
+  const cards=(frag.match(/class="coop-card"/g)||[]).length;
+  const bad=['undefined','NaN','[object Object]'].filter(k=>frag.indexOf(k)>=0);
+  const ok = secs===11 && cards===4 && frag.length>9000 && text.length>6000 &&
+             frag.indexOf('行内参考 请勿外传')>=0 && frag.indexOf('附录 A')>=0 &&
+             frag.indexOf('附录 B')>=0 && bad.length===0 && outline.length===11;
+  if(!ok) briefOk=false;
+  console.log(`  [${nm}] 章节${secs} 方向卡片${cards} HTML ${frag.length}字 文本 ${text.length}字 异常值[${bad.join(',')||'无'}] => ${ok?'通过':'失败'}`);
+}
+const distinct = new Set(Object.values(frags).map(f=>f.slice(
+  f.indexOf('<h2 class="sec">三、业务场景'), f.indexOf('<h2 class="sec">四、机构业务'))));
+console.log('  按机构差异化场景版本数:', distinct.size, '（应 >1）');
+if(distinct.size<2) briefOk=false;
+console.log('  参阅材料实跑:', briefOk?'通过':'失败');
+if(!briefOk) process.exitCode=1;
