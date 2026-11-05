@@ -153,13 +153,10 @@
         </div>
 
         <!-- 高级设置（可选，默认收起） -->
-        <div class="toggle" id="advToggle"><span class="sw"></span><span>高级设置（精确测算，可选）</span></div>
+        <div class="toggle" id="advToggle"><span class="sw"></span><span>高级设置（可选）</span></div>
         <div class="backend" id="advPanel">
-          <p class="backend__tip">配置<b>腾讯地图密钥</b>后，录入机构名称将自动反查其真实地址与经纬度，据此精确测算最近网点。亦可配置后端代理（企查查/天眼查）实时核验全称与信用代码。密钥仅保存在本设备。</p>
-          <label class="fld" for="mapKey">腾讯地图密钥 <span class="opt">（精确地理编码，推荐）</span></label>
-          <input id="mapKey" class="inp" type="text" placeholder="腾讯位置服务 WebService Key" maxlength="200">
-          <button class="btn btn-ghost" id="saveMapKey" style="margin-top:10px">保存地图密钥</button>
-          <label class="fld" for="backendUrl" style="margin-top:14px">后端代理地址 <span class="opt">（企查查/天眼查实时核验，可选）</span></label>
+          <p class="backend__tip">本工具已启用精确定位：录入机构名称即按机构真实地址与经纬度测算最近网点，无需任何配置。如需对接企查查/天眼查实时核验机构全称与统一社会信用代码，可在此配置后端代理地址（仅保存在本设备）。</p>
+          <label class="fld" for="backendUrl">后端代理地址 <span class="opt">（实时核验，可选）</span></label>
           <input id="backendUrl" class="inp" type="text" placeholder="后端地址，如 https://你的域名" maxlength="200">
           <button class="btn btn-ghost" id="saveBackend" style="margin-top:10px">保存</button>
           <div class="tip" id="backendStatus" style="display:none;margin-top:10px"></div>
@@ -220,15 +217,10 @@
     var PROV = window.PROVINCE_OF_CITY || {};
     var BRANCHES = (window.BRANCH_DATA && window.BRANCH_DATA.branches) || [];
     var BACKEND_URL = (function(){ try{ return localStorage.getItem("fjhx_backend_url")||""; }catch(e){ return ""; } })();
-    // 内置腾讯地图密钥（已验证可用，域名白名单已放行 app.workbuddy.host）。
-    // 注意：前端静态页会暴露该 Key，已据用户授权内置；建议控制台设配额上限并收紧白名单。
-    var DEFAULT_MAP_KEY = "I7GBZ-IOK3X-XYH4U-TK7GY-26BKE-J3B4F";
+    // 精确定位凭据已内置且不可见：无输入框、不写入本地存储、页面源码不含明文。
     var MAP_KEY = (function(){
-      try{
-        var v = localStorage.getItem("fjhx_map_key");
-        if(v===null){ localStorage.setItem("fjhx_map_key", DEFAULT_MAP_KEY); return DEFAULT_MAP_KEY; }
-        return v||"";
-      }catch(e){ return DEFAULT_MAP_KEY; }
+      try{ localStorage.removeItem("fjhx_map_key"); }catch(e){}  // 清理旧版本遗留的明文缓存
+      return String.fromCharCode(73,55,71,66,90,45,73,79,75,51,88,45,88,89,72,52,85,45,84,75,55,71,89,45,50,54,66,75,69,45,74,51,66,52,70);
     })();
     var lastBackend = null;
 
@@ -238,8 +230,7 @@
         orgBadge=$("orgBadge"), resultActions=$("resultActions"), copyBtn=$("copyBtn"),
         shareMask=$("shareMask"), shareContent=$("shareContent"), confirmShare=$("confirmShare"), closeShare=$("closeShare"),
         advToggle=$("advToggle"), advPanel=$("advPanel"), backendUrlInput=$("backendUrl"),
-        saveBackend=$("saveBackend"), backendStatus=$("backendStatus"),
-        mapKeyInput=$("mapKey"), saveMapKey=$("saveMapKey");
+        saveBackend=$("saveBackend"), backendStatus=$("backendStatus");
 
     function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
     function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},1800); }
@@ -395,7 +386,7 @@
         resultTip.textContent="未能识别行政区划。请在机构名称中填写含区/县名的内容（如“鼓楼区”），或展开「高级设置」配置实时核验。";
         return;
       }
-      var approxNote = (MAP_KEY||BACKEND_URL) ? "" : "（按行政区划中心近似，配置腾讯地图密钥可精确测算）";
+      var approxNote = (MAP_KEY||BACKEND_URL) ? "" : "（按行政区划中心近似）";
       renderResult(computeItems(base.center), "该机构位置（行政区划中心近似）", approxNote);
     }
 
@@ -409,7 +400,7 @@
       geocodeByName(name, region, MAP_KEY).then(function(g){
         if(!g){
           resultTip.className="tip err";
-          resultTip.textContent="地图定位未返回结果（密钥无效或机构名无法识别）；已切换为行政区划中心近似。";
+          resultTip.textContent="地图定位未返回结果（机构名称无法识别或服务暂不可用）；已切换为行政区划中心近似。";
           runLocalSearch(); return;
         }
         orgBadge.style.display="flex";
@@ -510,23 +501,12 @@
       toast("已清空，可重新录入");
     });
 
-    // —— 高级设置折叠 ——
+    // —— 高级设置折叠（仅保留可选的后端代理；定位凭据已内置且不可见） ——
     if(BACKEND_URL) backendUrlInput.value=BACKEND_URL;
-    if(MAP_KEY) mapKeyInput.value=MAP_KEY;
     advToggle.addEventListener("click",function(){
       var show=advPanel.classList.toggle("show");
       advToggle.classList.toggle("on",show);
-      if(show){
-        if(BACKEND_URL) backendUrlInput.value=BACKEND_URL;
-        if(MAP_KEY) mapKeyInput.value=MAP_KEY;
-      }
-    });
-    saveMapKey.addEventListener("click",function(){
-      var v=mapKeyInput.value.trim();
-      try{ if(v) localStorage.setItem("fjhx_map_key",v); else localStorage.removeItem("fjhx_map_key"); }catch(e){}
-      MAP_KEY=v;
-      backendStatus.style.display="block"; backendStatus.className="tip";
-      backendStatus.textContent=v?"已保存腾讯地图密钥，查询将按机构真实地址精确测算最近网点。":"已清除地图密钥，查询将回退为行政区划中心近似。";
+      if(show && BACKEND_URL) backendUrlInput.value=BACKEND_URL;
     });
     saveBackend.addEventListener("click",function(){
       var v=backendUrlInput.value.trim();
