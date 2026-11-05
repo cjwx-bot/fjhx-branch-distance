@@ -1,0 +1,13 @@
+{
+  "name": "fjhx-branch-distance-server",
+  "version": "1.0.0",
+  "description": "福建海峡银行最近网点查询 —— 实时后端代理（qcc/tyc/mock）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

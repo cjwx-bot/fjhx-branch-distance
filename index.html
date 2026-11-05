@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="format-detection" content="telephone=no">
+  <title>最近网点查询</title>
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAACoElEQVR42u3dsY7CQBBEwf1i/j8DciIEA+7pQi8+Wb2lS7DNObe79P1MILAElsCSwBJYAksCS2AJLAksgSWwJLAElsCSwBJYAksCS2AJLAksgSWwJLAElsCSwBJYAksCS2AJLAksgSWwJLAElsCSwBJYAksCS2AJrPKeHyOA9RGgdz9GA+ubnggDa9YTYWCNk8KrF9aPP2BRxRZYIaRKeVHFFljxqopsUcUWWEtUVdiiii2wVqlabosqtsBaqGqtLbDAAmunqp22qHrr7NkC6xcnDVYFrD8eMFtgTR0tWDthXeRQ2QJr6jjBAmvqLME6VPVcElhggRUOq/CqwNpwfr22wAILLLDAujwslwcWWGCBBRZYLg8ssMCiii3/sVweWGCBBRZYYIEFFlhg+a7Qd4VggQUWWGC5g9QdpO55d887WGCB5blCzxU2w/IkNFhTx+ndDWANHqq3zYA1dbTejwXW4AF7ox9Ygyf9evDTfx+sUltU9cI63vMOFlhgsUUVWDm21u6/GNbxe4VgFdpavvx6WMdvQoNVYqti8xJY17HVMngPrCvYKlq7CtZ/bXVNDRZYYAXbqtsZLLDASrXVODJYYIEFFlhsNasCCyywIm31zgsWWGCBBRZb9+phwQILrChb7cOCBRZYMbZMChZYYIEFVrMtY4IFFlghtswIFlhggQVWsy0DggUWWCG2TAcWWGCBBVazLaOBBRZYIbbMBRZYYIXYMhRYYIEFFljNtkwEFlhghdgyDlhggQUWWM22zAIWWGCF2DIIWGCBBRZYzbZMARZYYIXYMgJYYIEFFlgSWAJLYElgCSyBJYElsASWBJbAElgSWAJLYElgCSyBJYElsASWBJbAElgSWAJLYElgCSyBJYElsASWBJbAEljSAx5/uUvJ5eHGAAAAAElFTkSuQmCC">
+  <meta property="og:title" content="最近网点查询">
+  <meta property="og:description" content="福建海峡银行最近网点查询：输入机构名称，按真实经纬度精确测算最近网点。">
+  <meta property="og:image" content="https://map.qq.com/favicon.ico">
+  <meta name="theme-color" content="#006EFF">
+  <style>
+    :root{
+      --brand:#1a5bb8; --brand-2:#2a75c7; --brand-deep:#0f3f86;
+      --brand-soft:#eaf2fc; --brand-line:#d4e3f7;
+      --ink:#16243a; --ink-2:#5a6b82; --ink-3:#92a2b8;
+      --bg:#eef2f8; --card:#ffffff; --line:#e6ecf4;
+      --ok:#1f9d57; --ok-soft:#e6f6ec; --warn:#c8841a; --danger:#d4473b;
+      --radius:16px; --shadow:0 6px 22px rgba(26,91,184,.08);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{background:var(--bg)}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Microsoft YaHei","PingFang SC","Helvetica Neue",sans-serif;
+      color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+    .app{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);display:flex;flex-direction:column}
+    .top{position:relative;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 55%,#3f8fdc 100%);
+      color:#fff;padding:26px 18px 30px;overflow:hidden}
+    .top:after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.10)}
+    .top:before{content:"";position:absolute;right:30px;bottom:-50px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}
+    .top__row{position:relative;z-index:1;display:flex;align-items:center;gap:10px}
+    .top__logo{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(2px)}
+    .top__title{font-size:19px;font-weight:700;letter-spacing:.5px}
+    .top__sub{position:relative;z-index:1;margin-top:10px;font-size:12.5px;color:rgba(255,255,255,.86);line-height:1.55}
+    .top__badge{position:relative;z-index:1;margin-top:12px;display:inline-flex;align-items:center;gap:6px;
+      background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);padding:5px 11px;border-radius:999px;font-size:11.5px;color:#fff}
+    .dot{width:6px;height:6px;border-radius:50%;background:#9be7b4;box-shadow:0 0 0 0 rgba(155,231,180,.7);animation:pulse 1.8s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(155,231,180,.7)}70%{box-shadow:0 0 0 7px rgba(155,231,180,0)}100%{box-shadow:0 0 0 0 rgba(155,231,180,0)}}
+
+    .body{flex:1;padding:18px 14px 8px;margin-top:-14px}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+    .card__h{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+    .card__h .bar{width:4px;height:16px;border-radius:3px;background:var(--brand)}
+    .card__h h2{font-size:15.5px;font-weight:700;color:var(--ink)}
+
+    label.fld{display:block;font-size:13px;color:var(--ink-2);font-weight:600;margin-bottom:7px}
+    label.fld .opt{font-size:11px;color:var(--ink-3);font-weight:400}
+    .inp{width:100%;border:1.5px solid var(--line);background:#fbfdff;border-radius:11px;padding:12px 13px;font-size:15px;color:var(--ink);outline:none;transition:.18s;font-family:inherit}
+    .inp:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px var(--brand-soft)}
+    .inp::placeholder{color:#aab6c6}
+
+    .btn{width:100%;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+    .btn-primary{height:50px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);color:#fff;box-shadow:0 8px 20px rgba(26,91,184,.28)}
+    .btn-primary:active{transform:translateY(1px)}
+    .btn-ghost{height:50px;background:#f1f5fb;color:var(--brand);font-size:15px;font-weight:600}
+    .btn-ghost:active{opacity:.7}
+    .btn-row{display:flex;gap:10px;margin-top:16px}
+    .btn-row .btn-primary{flex:2}
+    .btn-row .btn-ghost{flex:1}
+
+    .tip{font-size:12.5px;color:var(--ink-2);background:var(--brand-soft);border-radius:11px;padding:10px 12px;line-height:1.55}
+    .tip.err{background:#fdecea;color:var(--danger)}
+
+    .orgbadge{display:none;align-items:center;gap:8px;background:var(--ok-soft);border:1px solid #c4e8d2;border-radius:11px;padding:10px 12px;font-size:13px;color:#1c7a45;margin-bottom:12px}
+    .orgbadge b{color:#13683a}
+
+    .hero{display:none;border-radius:16px;overflow:hidden;margin-bottom:12px;
+      background:linear-gradient(135deg,var(--brand-deep) 0%,var(--brand) 60%,var(--brand-2) 100%);color:#fff;position:relative;box-shadow:0 10px 26px rgba(26,91,184,.30)}
+    .hero:after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.10)}
+    .hero__inner{position:relative;z-index:1;padding:16px}
+    .hero__tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:999px;margin-bottom:10px}
+    .hero__name{font-size:17px;font-weight:700;line-height:1.4}
+    .hero__meta{margin-top:8px;font-size:12.5px;color:rgba(255,255,255,.82);line-height:1.55}
+    .hero__dist{display:flex;align-items:baseline;gap:6px;margin-top:12px}
+    .hero__dist .n{font-size:30px;font-weight:800;letter-spacing:.5px}
+    .hero__dist .u{font-size:14px;color:rgba(255,255,255,.85)}
+    .hero__phone{margin-top:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);padding:6px 12px;border-radius:10px;font-size:13px;color:#fff;text-decoration:none}
+
+    .list{display:flex;flex-direction:column;gap:9px}
+    .item{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;display:flex;gap:10px;align-items:flex-start}
+    .item__rank{flex:0 0 22px;height:22px;border-radius:7px;background:var(--brand-soft);color:var(--brand);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px}
+    .item__main{flex:1;min-width:0}
+    .item__name{font-size:14px;font-weight:600;color:var(--ink)}
+    .item__type{font-size:11px;color:var(--ink-3);margin-top:2px}
+    .item__addr{font-size:12.5px;color:var(--ink-2);margin-top:5px;line-height:1.5;word-break:break-all}
+    .item__dist{flex:0 0 auto;text-align:right}
+    .item__dist .d{font-size:14px;font-weight:700;color:var(--brand)}
+    .item__dist .p{font-size:11.5px;color:var(--ok);margin-top:3px}
+    .empty{text-align:center;color:var(--ink-3);padding:26px 10px;font-size:13.5px}
+    .empty .ic{font-size:32px;display:block;margin-bottom:8px;opacity:.5}
+
+    .notes{font-size:12.5px;color:var(--ink-2);line-height:1.75;padding-left:18px}
+    .notes li{margin-bottom:6px}
+    .foot{text-align:center;padding:14px 16px 22px;font-size:11.5px;color:var(--ink-3)}
+
+    .backend{display:none}
+    .backend.show{display:block;margin-top:12px}
+    .toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);cursor:pointer;user-select:none;margin-top:14px}
+    .toggle .sw{width:38px;height:22px;border-radius:999px;background:#cfd8e3;position:relative;transition:.2s;flex:0 0 auto}
+    .toggle .sw:after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+    .toggle.on .sw{background:var(--brand)}
+    .toggle.on .sw:after{transform:translateX(16px)}
+    .backend__tip{font-size:12.5px;color:var(--ink-2);background:var(--brand-soft);border-radius:10px;padding:9px 11px;margin-bottom:12px;line-height:1.55}
+
+    .mask{position:fixed;inset:0;background:rgba(15,25,40,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:22px}
+    .mask.show{display:flex}
+    .sheet{background:#fff;border-radius:16px;width:100%;max-width:480px;padding:18px;max-height:82vh;display:flex;flex-direction:column}
+    .sheet h3{font-size:16px;margin-bottom:12px}
+    .sheet pre{background:#f6f8fc;border:1px solid var(--line);border-radius:11px;padding:12px;font-size:12.5px;color:var(--ink);white-space:pre-wrap;word-break:break-all;flex:1;overflow:auto;line-height:1.6;font-family:-apple-system,"Microsoft YaHei",sans-serif;max-height:46vh}
+    .sheet__btns{display:flex;gap:10px;margin-top:14px}
+    .sheet__btns .btn{flex:1;height:46px}
+
+    .toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%) translateY(20px);background:rgba(22,36,58,.92);color:#fff;font-size:13.5px;padding:11px 18px;border-radius:999px;opacity:0;transition:.25s;z-index:80;pointer-events:none;display:flex;align-items:center;gap:7px}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="top__row">
+        <div class="top__logo">🏦</div>
+        <div class="top__title">福建海峡银行最近网点查询</div>
+      </div>
+      <p class="top__sub">输入机构名称（模糊即可），自动匹配距离最近的福建海峡银行网点。福建全省及浙江温州适用。</p>
+      <div class="top__badge"><span class="dot"></span>已收录 91 家网点 · 直线距离估算</div>
+    </header>
+
+    <main class="body">
+      <!-- 查询卡片 -->
+      <section class="card">
+        <div class="card__h"><span class="bar"></span><h2>机构名称查询</h2></div>
+
+        <label class="fld" for="orgName">机构名称 <span class="opt">（模糊输入即可，如：福建省财政厅）</span></label>
+        <input id="orgName" class="inp" type="text" placeholder="如：福建省财政厅 / 福州市教育局" maxlength="50">
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="searchBtn">🔍 查询</button>
+          <button class="btn btn-ghost" id="refreshBtn">↻ 刷新</button>
+        </div>
+
+        <!-- 高级设置（可选，默认收起） -->
+        <div class="toggle" id="advToggle"><span class="sw"></span><span>高级设置（精确测算，可选）</span></div>
+        <div class="backend" id="advPanel">
+          <p class="backend__tip">配置<b>腾讯地图密钥</b>后，录入机构名称将自动反查其真实地址与经纬度，据此精确测算最近网点。亦可配置后端代理（企查查/天眼查）实时核验全称与信用代码。密钥仅保存在本设备。</p>
+          <label class="fld" for="mapKey">腾讯地图密钥 <span class="opt">（精确地理编码，推荐）</span></label>
+          <input id="mapKey" class="inp" type="text" placeholder="腾讯位置服务 WebService Key" maxlength="200">
+          <button class="btn btn-ghost" id="saveMapKey" style="margin-top:10px">保存地图密钥</button>
+          <label class="fld" for="backendUrl" style="margin-top:14px">后端代理地址 <span class="opt">（企查查/天眼查实时核验，可选）</span></label>
+          <input id="backendUrl" class="inp" type="text" placeholder="后端地址，如 https://你的域名" maxlength="200">
+          <button class="btn btn-ghost" id="saveBackend" style="margin-top:10px">保存</button>
+          <div class="tip" id="backendStatus" style="display:none;margin-top:10px"></div>
+        </div>
+      </section>
+
+      <!-- 结果卡片 -->
+      <section class="card" id="resultCard">
+        <div class="card__h"><span class="bar"></span><h2>查询结果</h2></div>
+        <div class="orgbadge" id="orgBadge"></div>
+        <div class="tip" id="resultTip">请输入机构名称后点击「查询」。</div>
+        <div class="hero" id="hero"></div>
+        <div class="list" id="resultList"></div>
+        <div class="btn-row" id="resultActions" style="display:none">
+          <button class="btn btn-ghost" id="copyBtn">复制结果到群</button>
+        </div>
+      </section>
+
+      <!-- 使用说明 -->
+      <section class="card">
+        <div class="card__h"><span class="bar"></span><h2>使用说明</h2></div>
+        <ul class="notes">
+          <li>适用对象：福建省内及浙江温州地区的党政机关、事业单位、群团组织。</li>
+          <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
+          <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合腾讯地图公开位置实测匹配留存。</li>
+          <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="foot">福建海峡银行最近网点查询工具 · 仅用于政务合作位置参考</footer>
+  </div>
+
+  <!-- 分享弹窗 -->
+  <div class="mask" id="shareMask">
+    <div class="sheet">
+      <h3>复制结果分享到群</h3>
+      <pre id="shareContent"></pre>
+      <div class="sheet__btns">
+        <button class="btn btn-primary" id="confirmShare">复制并分享</button>
+        <button class="btn btn-ghost" id="closeShare">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    window.REGION_DATA = {"福州市":{"鼓楼区":[26.0885,119.292],"台江区":[26.0665,119.312],"仓山区":[26.041,119.289],"晋安区":[26.101,119.312],"马尾区":[25.987,119.451],"长乐区":[25.945,119.487],"闽侯县":[26.153,119.149],"连江县":[26.208,119.54],"罗源县":[26.533,119.563],"闽清县":[26.228,118.869],"永泰县":[25.871,118.939],"平潭县":[25.503,119.794]},"厦门市":{"思明区":[24.4798,118.0894],"湖里区":[24.521,118.135],"集美区":[24.583,118.097],"海沧区":[24.483,118.027],"同安区":[24.722,118.15],"翔安区":[24.623,118.253]},"漳州市":{"芗城区":[24.5133,117.6553],"龙文区":[24.521,117.693],"龙海区":[24.441,117.791],"漳浦县":[24.12,117.615],"云霄县":[23.958,117.341],"诏安县":[23.712,117.175],"东山县":[23.704,117.423],"南靖县":[24.51,117.359],"平和县":[24.365,117.316],"华安县":[25.008,117.53],"长泰区":[24.614,117.818]},"泉州市":{"鲤城区":[24.904,118.581],"丰泽区":[24.884,118.601],"洛江区":[24.94,118.65],"泉港区":[25.051,118.893],"石狮市":[24.724,118.651],"晋江市":[24.786,118.554],"南安市":[24.965,118.378],"惠安县":[25.031,118.79],"安溪县":[25.073,118.178],"永春县":[25.324,118.283],"德化县":[25.492,118.239],"金门县":[24.448,118.38]},"莆田市":{"城厢区":[25.438,119.006],"涵江区":[25.483,119.09],"荔城区":[25.439,119.016],"秀屿区":[25.289,119.11],"仙游县":[25.352,118.698]},"宁德市":{"蕉城区":[26.665,119.55],"福安市":[27.087,119.654],"福鼎市":[27.098,120.215],"霞浦县":[26.869,120.003],"古田县":[26.57,118.747],"屏南县":[26.908,118.985],"寿宁县":[27.457,119.502],"周宁县":[27.083,119.342],"柘荣县":[27.231,119.897]},"龙岩市":{"新罗区":[25.082,117.02],"永定区":[24.727,116.74],"漳平市":[25.288,117.406],"长汀县":[25.841,116.359],"上杭县":[25.047,116.421],"武平县":[25.087,116.099],"连城县":[25.726,116.752]},"三明市":{"三元区":[26.265,117.639],"永安市":[25.971,117.372],"明溪县":[26.355,117.199],"清流县":[26.178,116.824],"宁化县":[26.269,116.645],"大田县":[25.687,117.84],"尤溪县":[26.173,118.153],"沙县区":[26.402,117.796],"将乐县":[26.727,117.475],"泰宁县":[26.893,117.131],"建宁县":[26.834,116.838]},"南平市":{"延平区":[26.635,118.178],"建阳区":[27.34,118.111],"邵武市":[27.329,117.485],"武夷山市":[27.72,118.03],"建瓯市":[27.047,118.334],"顺昌县":[26.783,117.794],"浦城县":[27.919,118.531],"光泽县":[27.542,117.334],"松溪县":[27.518,118.785],"政和县":[27.357,118.851]},"平潭综合实验区":{"平潭县":[25.503,119.794]},"温州市":{"鹿城区":[27.983,120.686],"龙湾区":[27.922,120.81],"瓯海区":[27.94,120.6],"洞头区":[27.84,121.15],"瑞安市":[27.77,120.665],"乐清市":[28.104,120.973],"永嘉县":[28.15,120.69],"平阳县":[27.66,120.57],"苍南县":[27.51,120.41],"文成县":[27.79,119.94],"泰顺县":[27.58,119.7]}};
+    window.PROVINCE_OF_CITY = {"福州市":"福建省","厦门市":"福建省","漳州市":"福建省","泉州市":"福建省","莆田市":"福建省","宁德市":"福建省","龙岩市":"福建省","三明市":"福建省","南平市":"福建省","平潭综合实验区":"福建省","温州市":"浙江省"};
+    window.BRANCH_DATA = {"generated":"2026-11-02","source":"福建海峡银行官网网点目录（2026-08-21 版，共 91 家）＋腾讯地图位置实测","branches":[{"name":"福建海峡银行(福州鼓楼支行)","city":"福州市","district":"鼓楼区","type":"一级经营单位（鼓楼支行）","address":"福建省福州市鼓楼区五一中路18号正大广场1#楼1层","lat":26.0754,"lng":119.310701,"phone":"0591-87521294"},{"name":"福建海峡银行(福州三山支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区华大街道华林路123号","lat":26.099872,"lng":119.297729,"phone":"0591-87566804"},{"name":"福建海峡银行(福州东大支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区温泉街道东大路70号","lat":26.087403,"lng":119.31162,"phone":"0591-87538230"},{"name":"福建海峡银行(福州华林支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区华大街道五四路319号","lat":26.114459,"lng":119.30636,"phone":"0591-87845645"},{"name":"福建海峡银行(福州福新支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区水部街道福新路37号","lat":26.080188,"lng":119.31196,"phone":"0591-87517584"},{"name":"福建海峡银行(福州安泰支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区乌山路35号茂泰大厦1层","lat":26.075703,"lng":119.300705,"phone":"0591-87619380"},{"name":"福建海峡银行(福州温泉支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区温泉街道五四路153号","lat":26.097504,"lng":119.307872,"phone":"0591-87846223"},{"name":"福建海峡银行(福州庆城支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区鼓东街道井大路68号","lat":26.088522,"lng":119.304167,"phone":"0591-87521368"},{"name":"福建海峡银行(福州杨桥支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区鼓西路396号","lat":26.087473,"lng":119.288918,"phone":"0591-87530349"},{"name":"福建海峡银行(福州洪山支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区洪山镇西洪路396-2号","lat":26.082369,"lng":119.276915,"phone":"0591-83707029"},{"name":"福建海峡银行(福州闽都支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区古田路128号劳动大厦附属楼","lat":26.076669,"lng":119.317029,"phone":"0591-83310128"},{"name":"福建海峡银行(福州黎明支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区洪山镇福屿路200号","lat":26.072903,"lng":119.283048,"phone":"0591-83703517"},{"name":"福建海峡银行(福州软件园支行)","city":"福州市","district":"鼓楼区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市鼓楼区铜盘路软件大道89号","lat":26.111629,"lng":119.268335,"phone":"0591-83202135"},{"name":"福建海峡银行总行营业部","city":"福州市","district":"台江区","type":"总行营业部","address":"福建省福州市台江区江滨中大道358号","lat":26.052037,"lng":119.338929,"phone":"0591-87598491"},{"name":"福建海峡银行(福州台江支行)","city":"福州市","district":"台江区","type":"二级支行（总行营业部辖）","address":"福建省福州市台江区茶亭街道八一七中路256号","lat":26.067876,"lng":119.305156,"phone":"0591-83326184"},{"name":"福建海峡银行(福州永兴支行)","city":"福州市","district":"台江区","type":"二级支行（晋安支行辖）","address":"福建省福州市台江区国货西路188号","lat":26.064144,"lng":119.311371,"phone":"0591-83340091"},{"name":"福建海峡银行(福州六一支行)","city":"福州市","district":"台江区","type":"二级支行（总行营业部辖）","address":"福建省福州市台江区新港街道六一中路333号","lat":26.061115,"lng":119.321039,"phone":"0591-83294708"},{"name":"福建海峡银行(福州科技支行)","city":"福州市","district":"台江区","type":"二级支行（总行营业部辖）","address":"福建省福州市台江区义洲街道浦东路10号","lat":26.060466,"lng":119.296779,"phone":"0591-83294137"},{"name":"福建海峡银行福州政务服务中心支行","city":"福州市","district":"台江区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市台江区高桥路69号市民服务中心","lat":26.072022,"lng":119.307755,"phone":"0591-87620897"},{"name":"福建海峡银行(福州广达支行)","city":"福州市","district":"台江区","type":"二级支行（鼓楼支行辖）","address":"福建省福州市台江区宁化街道祥坂街6号富力中心B区","lat":26.062175,"lng":119.278346,"phone":"0591-87883257"},{"name":"福建海峡银行(福州仓山支行)","city":"福州市","district":"仓山区","type":"二级支行（总行营业部辖）","address":"福建省福州市仓山区临江街道观海路66号","lat":26.047494,"lng":119.320711,"phone":"0591-83458928"},{"name":"福建海峡银行(福州首山支行)","city":"福州市","district":"仓山区","type":"二级支行（总行营业部辖）","address":"福建省福州市仓山区上三路32号","lat":26.036973,"lng":119.311883,"phone":"0591-87447325"},{"name":"福建海峡银行(福州金山支行)","city":"福州市","district":"仓山区","type":"二级支行（总行营业部辖）","address":"福建省福州市仓山区金山街道金山榕城广场1号楼","lat":26.051102,"lng":119.266969,"phone":"0591-83854778"},{"name":"福建海峡银行(福州浦上支行)","city":"福州市","district":"仓山区","type":"二级支行（总行营业部辖）","address":"福建省福州市仓山区金山街道浦上大道216号","lat":26.037692,"lng":119.276489,"phone":"0591-87564564"},{"name":"福建海峡银行(福州江滨支行)","city":"福州市","district":"仓山区","type":"二级支行（总行营业部辖）","address":"福建省福州市仓山区南江滨西大道193号","lat":26.040515,"lng":119.352162,"phone":"0591-83898548"},{"name":"福建海峡银行(福州白湖亭支行)","city":"福州市","district":"仓山区","type":"二级支行（总行营业部辖）","address":"福建省福州市仓山区三叉街街道则徐大道379号","lat":26.028088,"lng":119.335366,"phone":"0591-87505672"},{"name":"福建海峡银行(福州百花支行)","city":"福州市","district":"仓山区","type":"二级支行（总行营业部辖）","address":"福建省福州市仓山区金山街道凤冈路782号","lat":26.036553,"lng":119.253168,"phone":"0591-83207731"},{"name":"福建海峡银行(福州金洲支行)","city":"福州市","district":"仓山区","type":"二级支行（总行营业部辖）","address":"福建省福州市仓山区建新镇金洲南路833号","lat":26.031123,"lng":119.277782,"phone":"0591-83301565"},{"name":"福建海峡银行(福州晋安支行)","city":"福州市","district":"晋安区","type":"一级经营单位（晋安支行）","address":"福建省福州市晋安区茶园街道六一北路158号","lat":26.099693,"lng":119.316236,"phone":"0591-83280084"},{"name":"福建海峡银行(福州五一支行)","city":"福州市","district":"晋安区","type":"二级支行（晋安支行辖）","address":"福建省福州市晋安区象园街道晋连路1号","lat":26.069742,"lng":119.325749,"phone":"0591-83366324"},{"name":"福建海峡银行(福州闽江支行)","city":"福州市","district":"晋安区","type":"二级支行（晋安支行辖）","address":"福建省福州市晋安区岳峰镇横屿路17号","lat":26.092582,"lng":119.336415,"phone":"0591-83666920"},{"name":"福建海峡银行(福州金城支行)","city":"福州市","district":"晋安区","type":"二级支行（晋安支行辖）","address":"福建省福州市晋安区岳峰镇塔头路270号","lat":26.089869,"lng":119.322814,"phone":"0591-83374013"},{"name":"福建海峡银行(福州鼓山支行)","city":"福州市","district":"晋安区","type":"二级支行（晋安支行辖）","address":"福建省福州市晋安区鼓山镇福马路666号","lat":26.066616,"lng":119.363505,"phone":"0591-87500397"},{"name":"福建海峡银行(福州前屿支行)","city":"福州市","district":"晋安区","type":"二级支行（晋安支行辖）","address":"福建省福州市晋安区鼓山镇秀坂路169号","lat":26.068957,"lng":119.341244,"phone":"0591-87502257"},{"name":"福建海峡银行(福州开发区支行)","city":"福州市","district":"马尾区","type":"二级支行（榕城管理部辖）","address":"福建省福州市马尾区江滨东大道70号","lat":26.01788,"lng":119.405289,"phone":"0591-83981355"},{"name":"福建海峡银行福建自贸试验区福州片区君竹支行","city":"福州市","district":"马尾区","type":"二级支行（榕城管理部辖）","address":"福建省福州市马尾区君竹路162号","lat":25.994589,"lng":119.458418,"phone":"0591-83680365"},{"name":"福建海峡银行(福州亭江支行)","city":"福州市","district":"马尾区","type":"二级支行（榕城管理部辖）","address":"福建省福州市马尾区亭江镇亭头村新街102号","lat":26.07057,"lng":119.505814,"phone":"0591-87922252"},{"name":"福建海峡银行(福州新区分行)","city":"福州市","district":"长乐区","type":"一级经营单位（福州新区分行）","address":"福建省福州市长乐区滨海新城万新路","lat":25.877093,"lng":119.61178,"phone":"0591-28921827"},{"name":"福建海峡银行(长乐支行)","city":"福州市","district":"长乐区","type":"二级支行（福州新区分行辖）","address":"福建省福州市长乐区凯歌路266号","lat":25.944918,"lng":119.486549,"phone":"0591-28821216"},{"name":"福建海峡银行(长乐金峰支行)","city":"福州市","district":"长乐区","type":"二级支行（福州新区分行辖）","address":"福建省福州市长乐区金峰镇胪西2路3号","lat":25.97657,"lng":119.62512,"phone":"0591-27523679"},{"name":"福建海峡银行(长乐江田支行)","city":"福州市","district":"长乐区","type":"二级支行（福州新区分行辖）","address":"福建省福州市长乐区江田镇友爱村江滨路","lat":25.822498,"lng":119.57842,"phone":"0591-28700216"},{"name":"福建海峡银行(福州长乐航城支行)","city":"福州市","district":"长乐区","type":"二级支行（福州新区分行辖）","address":"福建省福州市长乐区航城街道吴航路555号","lat":25.953132,"lng":119.497967,"phone":"0591-28965786"},{"name":"福建海峡银行(福清分行)","city":"福州市","district":"福清市","type":"一级经营单位（福清分行）","address":"福建省福州市福清市清昌大道天和华府1#楼","lat":25.704824,"lng":119.323616,"phone":"0591-86007705"},{"name":"福建海峡银行(福清龙田支行)","city":"福州市","district":"福清市","type":"二级支行（福清分行辖）","address":"福建省福州市福清市龙田镇","lat":25.609382,"lng":119.445419,"phone":"0591-86011733"},{"name":"福建海峡银行(福清高山支行)","city":"福州市","district":"福清市","type":"二级支行（福清分行辖）","address":"福建省福州市福清市高山镇中街56号","lat":25.467789,"lng":119.563959,"phone":"0591-85897979"},{"name":"福建海峡银行(福清渔溪支行)","city":"福州市","district":"福清市","type":"二级支行（福清分行辖）","address":"福建省福州市福清市渔溪镇渔江路","lat":25.593039,"lng":119.301662,"phone":"0591-85372863"},{"name":"福建海峡银行(福清玉融支行)","city":"福州市","district":"福清市","type":"二级支行（福清分行辖）","address":"福建省福州市福清市音西清昌大道27-29号","lat":25.718457,"lng":119.362614,"phone":"0591-86007802"},{"name":"福建海峡银行(福清玉屏支行)","city":"福州市","district":"福清市","type":"二级支行（福清分行辖）","address":"福建省福州市福清市玉屏街道新亚大厦","lat":25.71906,"lng":119.38438,"phone":"0591-85165696"},{"name":"福建海峡银行(闽侯支行)","city":"福州市","district":"闽侯县","type":"二级支行（榕城管理部辖）","address":"福建省福州市闽侯县甘蔗街道滨城大道58号","lat":26.145006,"lng":119.136692,"phone":"0591-22986789"},{"name":"福建海峡银行(闽侯上街小微支行)","city":"福州市","district":"闽侯县","type":"小微企业专营（榕城管理部辖）","address":"福建省福州市闽侯县上街镇国宾大道233号","lat":26.067743,"lng":119.20336,"phone":"0591-22798636"},{"name":"福建海峡银行(福州高新支行)","city":"福州市","district":"闽侯县","type":"二级支行（榕城管理部辖）","address":"福建省福州市闽侯县高新区海西园","lat":26.04383,"lng":119.213028,"phone":"0591-22869691"},{"name":"福建海峡银行(连江支行)","city":"福州市","district":"连江县","type":"二级支行（榕城管理部辖）","address":"福建省福州市连江县凤城镇文山南路218号","lat":26.207606,"lng":119.539958,"phone":"0591-26157537"},{"name":"福建海峡银行(连江琯头支行)","city":"福州市","district":"连江县","type":"二级支行（榕城管理部辖）","address":"福建省福州市连江县琯头镇大众中路28号","lat":26.132572,"lng":119.565347,"phone":"0591-26275771"},{"name":"福建海峡银行(连江敖江支行)","city":"福州市","district":"连江县","type":"二级支行（榕城管理部辖）","address":"福建省福州市连江县敖江镇金凤北路33号","lat":26.22284,"lng":119.559658,"phone":"0591-26393665"},{"name":"福建海峡银行(闽清支行)","city":"福州市","district":"闽清县","type":"二级支行（榕城管理部辖）","address":"福建省福州市闽清县梅城镇解放大街55号","lat":26.220001,"lng":118.863482,"phone":"0591-22338807"},{"name":"福建海峡银行(罗源支行)","city":"福州市","district":"罗源县","type":"二级支行（榕城管理部辖）","address":"福建省福州市罗源县罗川中路1号","lat":26.489068,"lng":119.556134,"phone":"0591-26820213"},{"name":"福建海峡银行(罗源海城支行)","city":"福州市","district":"罗源县","type":"二级支行（榕城管理部辖）","address":"福建省福州市罗源县松山镇滨海商业街","lat":26.46033,"lng":119.601483,"phone":"0591-26820001"},{"name":"福建海峡银行(永泰支行)","city":"福州市","district":"永泰县","type":"二级支行（榕城管理部辖）","address":"福建省福州市永泰县樟城镇上马路34号","lat":25.863825,"lng":118.937963,"phone":"0591-24803366"},{"name":"福建海峡银行(平潭支行)","city":"福州市","district":"平潭县","type":"二级支行（榕城管理部辖）","address":"福建省福州市平潭县海坛街道翠园南路","lat":25.496477,"lng":119.787505,"phone":"0591-23135008"},{"name":"福建海峡银行(漳州分行)","city":"漳州市","district":"龙文区","type":"一级经营单位（漳州分行）","address":"福建省漳州市龙文区新浦东路桂溪名都","lat":24.506264,"lng":117.678819,"phone":"0596-2159961"},{"name":"福建海峡银行(云霄支行)","city":"漳州市","district":"云霄县","type":"二级支行（漳州分行辖）","address":"福建省漳州市云霄县复兴东路","lat":23.957124,"lng":117.344246,"phone":"0596-8890399"},{"name":"福建海峡银行(漳浦支行)","city":"漳州市","district":"漳浦县","type":"二级支行（漳州分行辖）","address":"福建省漳州市漳浦县绥安镇朝阳大道东366号","lat":24.119588,"lng":117.615038,"phone":"0596-3113089"},{"name":"福建海峡银行(龙海支行)","city":"漳州市","district":"龙海区","type":"二级支行（漳州分行辖）","address":"福建省漳州市龙海区角美镇文圃大道","lat":24.524472,"lng":117.899214,"phone":"0596-6778956"},{"name":"福建海峡银行(漳州芗城支行)","city":"漳州市","district":"芗城区","type":"二级支行（漳州分行辖）","address":"福建省漳州市芗城区博爱西道1号","lat":24.503145,"lng":117.650816,"phone":"0596-2109317"},{"name":"福建海峡银行(龙岩分行营业部)","city":"龙岩市","district":"新罗区","type":"一级经营单位（龙岩分行）","address":"福建省龙岩市新罗区西陂街道华莲路51号","lat":25.077323,"lng":117.02252,"phone":"0597-2999016"},{"name":"福建海峡银行(龙岩新罗支行)","city":"龙岩市","district":"新罗区","type":"二级支行（龙岩分行辖）","address":"福建省龙岩市新罗区龙盛花园B栋4号","lat":25.101512,"lng":116.992028,"phone":"0597-2602086"},{"name":"福建海峡银行(漳平支行)","city":"龙岩市","district":"漳平市","type":"二级支行（龙岩分行辖）","address":"福建省龙岩市漳平市景弘路","lat":25.293664,"lng":117.428835,"phone":"0597-7762686"},{"name":"福建海峡银行(长汀支行)","city":"龙岩市","district":"长汀县","type":"二级支行（龙岩分行辖）","address":"福建省龙岩市长汀县恒宝汀州首府","lat":25.831124,"lng":116.345702,"phone":"0597-6789086"},{"name":"福建海峡银行(宁德分行)","city":"宁德市","district":"蕉城区","type":"一级经营单位（宁德分行）","address":"福建省宁德市蕉城区天湖东路13号","lat":26.655978,"lng":119.545173,"phone":"0593-2351800"},{"name":"福建海峡银行(福安支行)","city":"宁德市","district":"福安市","type":"二级支行（宁德分行辖）","address":"福建省宁德市福安市广场北路6号","lat":27.080655,"lng":119.645426,"phone":"0593-6505563"},{"name":"福建海峡银行(福鼎支行)","city":"宁德市","district":"福鼎市","type":"二级支行（宁德分行辖）","address":"福建省宁德市福鼎市海宁路51号","lat":27.315665,"lng":120.219196,"phone":"0593-7355336"},{"name":"福建海峡银行(宁德蕉城支行)","city":"宁德市","district":"蕉城区","type":"二级支行（宁德分行辖）","address":"福建省宁德市蕉城区闽东中路5号","lat":26.654077,"lng":119.531734,"phone":"0593-8990080"},{"name":"福建海峡银行(福鼎瑞盛小微支行)","city":"宁德市","district":"福鼎市","type":"小微企业专营（宁德分行辖）","address":"福建省宁德市福鼎市滨海大道红星美凯龙","lat":27.29289,"lng":120.208426,"phone":"0593-7595018"},{"name":"福建海峡银行(泉州分行)","city":"泉州市","district":"丰泽区","type":"一级经营单位（泉州分行）","address":"福建省泉州市丰泽区泉秀街496号","lat":24.889128,"lng":118.601699,"phone":"0595-29012345"},{"name":"福建海峡银行(泉州科技支行)","city":"泉州市","district":"鲤城区","type":"二级支行（泉州分行辖）","address":"福建省泉州市鲤城区南环路1051号","lat":24.905007,"lng":118.544873,"phone":"0595-29015658"},{"name":"福建海峡银行(南安支行)","city":"泉州市","district":"南安市","type":"二级支行（泉州分行辖）","address":"福建省泉州市南安市美林街道江北大道皇家滨城","lat":24.964353,"lng":118.402037,"phone":"0595-86261810"},{"name":"福建海峡银行(石狮支行)","city":"泉州市","district":"石狮市","type":"二级支行（泉州分行辖）","address":"福建省泉州市石狮市中骏天誉","lat":24.738685,"lng":118.647919,"phone":"0595-36888169"},{"name":"福建海峡银行(晋江支行)","city":"泉州市","district":"晋江市","type":"二级支行（泉州分行辖）","address":"福建省泉州市晋江市青阳街道崇德路267号","lat":24.799275,"lng":118.574604,"phone":"0595-36788877"},{"name":"福建海峡银行(晋江梅岭支行)","city":"泉州市","district":"晋江市","type":"二级支行（泉州分行辖）","address":"福建省泉州市晋江市梅岭街道世纪大道998号","lat":24.822378,"lng":118.573592,"phone":"0595-29012801"},{"name":"福建海峡银行(莆田分行)","city":"莆田市","district":"荔城区","type":"一级经营单位（莆田分行）","address":"福建省莆田市荔城区镇海街道胜利北街1050号","lat":25.439899,"lng":119.016176,"phone":"0594-2739888"},{"name":"福建海峡银行(仙游支行)","city":"莆田市","district":"仙游县","type":"二级支行（莆田分行辖）","address":"福建省莆田市仙游县鲤南镇","lat":25.35169,"lng":118.69815,"phone":"0594-8288889"},{"name":"福建海峡银行(莆田荔城支行)","city":"莆田市","district":"荔城区","type":"二级支行（莆田分行辖）","address":"福建省莆田市荔城区拱辰街道东圳东路565号","lat":25.445958,"lng":119.03001,"phone":"0594-2292338"},{"name":"福建海峡银行(三明分行)","city":"三明市","district":"三元区","type":"一级经营单位（三明分行）","address":"福建省三明市三元区东新四路崇桂新村","lat":26.272531,"lng":117.635064,"phone":"0598-8910637"},{"name":"福建海峡银行(南平分行)","city":"南平市","district":"建阳区","type":"一级经营单位（南平分行）","address":"福建省南平市建阳区西城国际","lat":27.331999,"lng":118.109606,"phone":"0599-8080808"},{"name":"福建海峡银行(南平延平支行)","city":"南平市","district":"延平区","type":"二级支行（南平分行辖）","address":"福建省南平市延平区解放路98号","lat":26.640489,"lng":118.180172,"phone":"0599-8888559"},{"name":"福建海峡银行(厦门分行)","city":"厦门市","district":"思明区","type":"一级经营单位（厦门分行）","address":"福建省厦门市思明区湖滨南路357-359号","lat":24.472917,"lng":118.105036,"phone":"0592-2351318"},{"name":"福建海峡银行(厦门集美支行)","city":"厦门市","district":"集美区","type":"二级支行（厦门分行辖）","address":"福建省厦门市集美区宁海六里1号","lat":24.560863,"lng":118.060302,"phone":"0592-6770227"},{"name":"福建海峡银行(温州分行)","city":"温州市","district":"鹿城区","type":"一级经营单位（温州分行）","address":"浙江省温州市鹿城区车站大道2号华盟商务广场","lat":27.983134,"lng":120.685559,"phone":"0577-86008157"},{"name":"福建海峡银行(温州龙湾支行)","city":"温州市","district":"龙湾区","type":"二级支行（温州分行辖）","address":"浙江省温州市龙湾区永中西路799号","lat":27.922189,"lng":120.809926,"phone":"0577-86008166"},{"name":"福建海峡银行(温州瑞安支行)","city":"温州市","district":"瑞安市","type":"二级支行（温州分行辖）","address":"浙江省温州市瑞安市莘阳大道691号","lat":27.770204,"lng":120.665215,"phone":"0577-66890208"},{"name":"福建海峡银行温州乐清小微企业专营支行","city":"温州市","district":"乐清市","type":"小微企业专营（温州分行辖）","address":"浙江省温州市乐清市伯乐东路1号","lat":28.104377,"lng":120.973351,"phone":"0577-61575910"}]};
+  </script>
+
+  <script>
+  (function(){
+    "use strict";
+    var REGIONS = window.REGION_DATA || {};
+    var PROV = window.PROVINCE_OF_CITY || {};
+    var BRANCHES = (window.BRANCH_DATA && window.BRANCH_DATA.branches) || [];
+    var BACKEND_URL = (function(){ try{ return localStorage.getItem("fjhx_backend_url")||""; }catch(e){ return ""; } })();
+    // 内置腾讯地图密钥（已验证可用，域名白名单已放行 app.workbuddy.host）。
+    // 注意：前端静态页会暴露该 Key，已据用户授权内置；建议控制台设配额上限并收紧白名单。
+    var DEFAULT_MAP_KEY = "I7GBZ-IOK3X-XYH4U-TK7GY-26BKE-J3B4F";
+    var MAP_KEY = (function(){
+      try{
+        var v = localStorage.getItem("fjhx_map_key");
+        if(v===null){ localStorage.setItem("fjhx_map_key", DEFAULT_MAP_KEY); return DEFAULT_MAP_KEY; }
+        return v||"";
+      }catch(e){ return DEFAULT_MAP_KEY; }
+    })();
+    var lastBackend = null;
+
+    function $(id){ return document.getElementById(id); }
+    var orgNameInput=$("orgName"), searchBtn=$("searchBtn"), refreshBtn=$("refreshBtn"),
+        resultTip=$("resultTip"), resultList=$("resultList"), hero=$("hero"),
+        orgBadge=$("orgBadge"), resultActions=$("resultActions"), copyBtn=$("copyBtn"),
+        shareMask=$("shareMask"), shareContent=$("shareContent"), confirmShare=$("confirmShare"), closeShare=$("closeShare"),
+        advToggle=$("advToggle"), advPanel=$("advPanel"), backendUrlInput=$("backendUrl"),
+        saveBackend=$("saveBackend"), backendStatus=$("backendStatus"),
+        mapKeyInput=$("mapKey"), saveMapKey=$("saveMapKey");
+
+    function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+    function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},1800); }
+
+    function haversineM(la1,lo1,la2,lo2){
+      var R=6371000, dLa=(la2-la1)*Math.PI/180, dLo=(lo2-lo1)*Math.PI/180;
+      var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
+      return 2*R*Math.asin(Math.sqrt(a));
+    }
+    function fmtDist(m){ if(m<1000) return Math.round(m)+" 米"; if(m<100000) return (m/1000).toFixed(1)+" 公里"; return Math.round(m/1000)+" 公里"; }
+
+    // —— JSONP 轻量封装（用于跨域调用腾讯地图 WebService）——
+    function jsonp(url, cbName, timeout){
+      return new Promise(function(resolve,reject){
+        var sc=document.createElement("script"), called=false;
+        var t=setTimeout(function(){ if(!called){ called=true; cleanup(); reject(new Error("请求超时")); } }, timeout||7000);
+        function cleanup(){ clearTimeout(t); if(sc.parentNode) sc.parentNode.removeChild(sc); try{ delete window[cbName]; }catch(e){} }
+        window[cbName]=function(d){ if(called) return; called=true; cleanup(); resolve(d); };
+        sc.src=url+(url.indexOf("?")>-1?"&":"?")+"output=jsonp&callback="+encodeURIComponent(cbName);
+        document.head.appendChild(sc);
+      });
+    }
+    // 腾讯地图「地点建议」：凭机构名称反查真实坐标与地址（精确测算基准）
+    function geocodeByName(name, region, key){
+      var url="https://apis.map.qq.com/ws/place/v1/suggestion/?keyword="+encodeURIComponent(name)+
+        "&region="+encodeURIComponent(region||"")+"&key="+encodeURIComponent(key);
+      var cb="_qqsug"+Date.now();
+      return jsonp(url, cb).then(function(j){
+        if(j && j.status===0 && j.data && j.data.length){
+          var d=j.data[0];
+          if(d && d.location) return {title:d.title, address:d.address||"", lat:d.location.lat, lng:d.location.lng};
+        }
+        return null;
+      }).catch(function(){ return null; });
+    }
+
+    // 由机构名称自动研判类型（用于后端实时查询入参）
+    function classifyType(name){
+      var t=String(name||"");
+      if(/(学校|学院|大学|医院|研究院|研究|所|中心|馆|台|社|院|幼儿园|中学|小学)/.test(t)) return "public";
+      if(/(团体|协会|工会|共青团|妇联|工商联|文联|科协|侨联|残联|红十字|联合会|商会|学会|基金会)/.test(t)) return "group";
+      return "government";
+    }
+
+    // —— 行政区划索引（长名优先）——
+    var DISTRICT_INDEX=(function(){
+      var idx=[];
+      Object.keys(REGIONS).forEach(function(city){
+        var prov=PROV[city]||"福建省";
+        Object.keys(REGIONS[city]).forEach(function(dist){
+          idx.push({name:dist,city:city,province:prov,center:REGIONS[city][dist]});
+        });
+      });
+      idx.sort(function(a,b){return b.name.length-a.name.length;});
+      return idx;
+    })();
+    // 省级机构归位：含省名但未命中市/区县时，归位省会（福建→福州鼓楼；浙江→温州，即本行在浙唯一覆盖地）
+    var PROVINCE_CAPITAL={
+      "福建省":{city:"福州市",district:"鼓楼区",center:(REGIONS["福州市"]&&REGIONS["福州市"]["鼓楼区"])||[26.0885,119.2920]},
+      "浙江省":{city:"温州市",district:"",center:(REGIONS["温州市"]&&REGIONS["温州市"]["鹿城区"])||[27.9830,120.6860]}
+    };
+    var GOV_UNITS=["人民政府","发展和改革委员会","发改委","财政厅","教育厅","卫生健康委员会","卫健委","人力资源和社会保障","人社厅","自然资源厅","生态环境厅","交通运输厅","市场监督管理局","市场监管局","公安厅","司法厅","水利厅","农业农村厅","文化和旅游厅","文旅厅","民政厅","住房和城乡建设厅","住建厅","商务厅","审计厅","林业局","海洋与渔业局","广播电视局","体育局","统计局","医疗保障局","医保局","机关事务管理局","粮食和物资储备局","监狱管理局","人民银行","央行","分行","监管局","税务局","法院","检察院","省委","组织部","宣传部","委员会","银保监","证监","工会","共青团"];
+
+    function parseAddress(text){
+      if(!text||!text.trim()) return null;
+      var t=text.trim(), matched=null;
+      for(var i=0;i<DISTRICT_INDEX.length;i++){ if(t.indexOf(DISTRICT_INDEX[i].name)!==-1){ matched=DISTRICT_INDEX[i]; break; } }
+      if(matched){
+        return {province:matched.province,city:matched.city,district:matched.name,
+          center:{lat:matched.center[0],lng:matched.center[1]}};
+      }
+      var cities=Object.keys(REGIONS).sort(function(a,b){return b.length-a.length;}), cityHit=null;
+      for(var c=0;c<cities.length;c++){ if(t.indexOf(cities[c])!==-1){ cityHit=cities[c]; break; } }
+      if(cityHit){
+        var ds=REGIONS[cityHit], ks=Object.keys(ds), la=0, lo=0;
+        ks.forEach(function(k){ la+=ds[k][0]; lo+=ds[k][1]; });
+        return {province:PROV[cityHit]||"福建省",city:cityHit,district:"",
+          center:{lat:la/ks.length,lng:lo/ks.length},precision:"city"};
+      }
+      // —— 省级机构层（新增）：含省名即归位省会，覆盖"人民银行福建省分行""XX省XX厅"等省级机构 ——
+      var provinces=Object.keys(PROVINCE_CAPITAL);
+      for(var p=0;p<provinces.length;p++){
+        if(t.indexOf(provinces[p])!==-1){
+          var cap=PROVINCE_CAPITAL[provinces[p]];
+          return {province:provinces[p],city:cap.city,district:cap.district||"",
+            center:{lat:cap.center[0],lng:cap.center[1]},precision:"province"};
+        }
+      }
+      for(var g=0;g<GOV_UNITS.length;g++){
+        if(t.indexOf(GOV_UNITS[g])!==-1){
+          var fc=REGIONS["福州市"]["鼓楼区"];
+          return {province:"福建省",city:"福州市",district:"鼓楼区",center:{lat:fc[0],lng:fc[1]},precision:"govhint"};
+        }
+      }
+      return null;
+    }
+
+    function computeItems(base){
+      var items=[];
+      for(var i=0;i<BRANCHES.length;i++){
+        var b=BRANCHES[i]; if(!b||!b.lat||!b.lng) continue;
+        items.push({branch:b,dist:haversineM(base.lat,base.lng,b.lat,b.lng)});
+      }
+      items.sort(function(a,b){return a.dist-b.dist;});
+      return items;
+    }
+
+    function renderResult(items, baseLabel, approxNote){
+      resultActions.style.display="flex";
+      resultTip.className="tip";
+      if(!items.length){
+        resultTip.className="tip err";
+        resultTip.textContent="未匹配到福建海峡银行网点，请更换机构名称后重试。";
+        hero.style.display="none";
+        resultList.innerHTML='<div class="empty"><span class="ic">📍</span>暂无可匹配网点</div>';
+        return;
+      }
+      var top=items.slice(0,8);
+      resultTip.textContent="已匹配 "+items.length+" 家网点，以下为距离最近的 "+top.length+" 家（直线距离测算"+(approxNote||"")+"）：";
+      var first=top[0], b=first.branch;
+      hero.style.display="block";
+      hero.innerHTML=
+        '<div class="hero__inner">'+
+          '<div class="hero__tag">🏆 距离最近</div>'+
+          '<div class="hero__name">'+esc(b.name)+'</div>'+
+          '<div class="hero__meta">'+esc(b.type||"二级支行")+' · '+esc(b.address||"地址未收录")+'</div>'+
+          '<div class="hero__dist"><span class="n">'+fmtDist(first.dist)+'</span><span class="u">直线距离</span></div>'+
+          (b.phone?'<a class="hero__phone" href="tel:'+esc(b.phone)+'">☎ '+esc(b.phone)+'</a>':'')+
+        '</div>';
+      resultList.innerHTML="";
+      top.slice(1).forEach(function(item,idx){
+        var bb=item.branch, node=document.createElement("div"); node.className="item";
+        node.innerHTML=
+          '<div class="item__rank">'+(idx+2)+'</div>'+
+          '<div class="item__main">'+
+            '<div class="item__name">'+esc(bb.name)+'</div>'+
+            '<div class="item__type">'+esc(bb.type||"二级支行")+'</div>'+
+            '<div class="item__addr">'+esc(bb.address||"地址未收录")+'</div>'+
+          '</div>'+
+          '<div class="item__dist"><div class="d">'+fmtDist(item.dist)+'</div>'+(bb.phone?'<div class="p">☎ '+esc(bb.phone)+'</div>':'')+'</div>';
+        resultList.appendChild(node);
+      });
+    }
+
+    function runLocalSearch(){
+      lastBackend=null;
+      orgBadge.style.display="none";
+      var name=orgNameInput.value.trim();
+      var base=parseAddress(name);
+      if(!base){
+        hero.style.display="none"; resultList.innerHTML=""; resultActions.style.display="none";
+        resultTip.className="tip err";
+        resultTip.textContent="未能识别行政区划。请在机构名称中填写含区/县名的内容（如“鼓楼区”），或展开「高级设置」配置实时核验。";
+        return;
+      }
+      var approxNote = (MAP_KEY||BACKEND_URL) ? "" : "（按行政区划中心近似，配置腾讯地图密钥可精确测算）";
+      renderResult(computeItems(base.center), "该机构位置（行政区划中心近似）", approxNote);
+    }
+
+    // —— 精确测算：腾讯地图反查机构真实坐标后算最近网点 ——
+    function doGeocodeSearch(name){
+      lastBackend=null;
+      resultTip.className="tip"; resultTip.textContent="正在通过地图精确定位「"+name+"」的真实地址与坐标…";
+      hero.style.display="none"; resultList.innerHTML=""; resultActions.style.display="none";
+      var hint=parseAddress(name);
+      var region = hint ? (hint.city||hint.province) : "福建省";
+      geocodeByName(name, region, MAP_KEY).then(function(g){
+        if(!g){
+          resultTip.className="tip err";
+          resultTip.textContent="地图定位未返回结果（密钥无效或机构名无法识别）；已切换为行政区划中心近似。";
+          runLocalSearch(); return;
+        }
+        orgBadge.style.display="flex";
+        orgBadge.innerHTML="📍 精确定位："+esc(g.title||"")+(g.address?" · "+esc(g.address):"");
+        renderResult(computeItems({lat:g.lat,lng:g.lng}), "该机构真实位置（经纬度测算）");
+      }).catch(function(e){
+        resultTip.className="tip err";
+        resultTip.textContent="地图定位请求失败："+e.message+"；已切换为行政区划中心近似。";
+        runLocalSearch();
+      });
+    }
+
+    searchBtn.addEventListener("click",function(){
+      var name=orgNameInput.value.trim();
+      if(!name){ toast("请输入机构名称"); orgNameInput.focus(); return; }
+      if(BACKEND_URL){ doBackendSearch(name); return; }
+      if(MAP_KEY){ doGeocodeSearch(name); return; }
+      runLocalSearch();
+    });
+    orgNameInput.addEventListener("keydown",function(e){ if(e.key==="Enter"){ searchBtn.click(); } });
+
+    function doBackendSearch(name){
+      resultTip.className="tip"; resultTip.textContent="正在实时查询「"+name+"」的机构信息…";
+      hero.style.display="none"; resultList.innerHTML=""; resultActions.style.display="none";
+      var sep=BACKEND_URL.indexOf("?")!==-1?"&":"?";
+      var url=BACKEND_URL.replace(/\/+$/,"")+"/api/org"+sep+"name="+encodeURIComponent(name)+"&type="+classifyType(name);
+      fetch(url,{headers:{"Accept":"application/json"}})
+        .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
+        .then(function(res){
+          var j=res.j;
+          if(!res.ok||!j||j.found===false){
+            resultTip.className="tip err";
+            resultTip.textContent=((j&&j.error)?j.error:"实时查询未匹配到该机构")+"；已切换为本地行政区划估算。";
+            runLocalSearch(); return;
+          }
+          renderFromBackend(j);
+        })
+        .catch(function(e){
+          resultTip.className="tip err";
+          resultTip.textContent="实时查询请求失败（后端不可达）："+e.message+"；已切换为本地行政区划估算。";
+          runLocalSearch();
+        });
+    }
+    function renderFromBackend(j){
+      var o=j.org||{}; lastBackend=j;
+      if(o.fullName||o.creditCode){
+        orgBadge.style.display="flex";
+        orgBadge.innerHTML="实时核验：<b>"+esc(o.fullName||"")+(o.creditCode?" · "+esc(o.creditCode):"")+"</b>"+(o.address?" · 📍"+esc(o.address):"");
+      } else { orgBadge.style.display="none"; }
+      var items=(j.nearest||[]).map(function(x){return {branch:{name:x.name,type:x.type,address:x.address,phone:x.phone},distText:x.distText};});
+      renderResult(items,"「"+(o.fullName||"")+"」位置");
+    }
+
+    // —— 分享文本 ——
+    function buildShareLocal(){
+      var name=orgNameInput.value.trim()||"（未填写）";
+      var base=parseAddress(name); if(!base) return "【福建海峡银行最近网点查询】\n未识别到行政区划，无法匹配网点。";
+      var items=computeItems(base.center);
+      var text="【福建海峡银行最近网点查询结果】\n查询机构："+name+"\n以下为距离最近的福建海峡银行网点（直线距离估算）：\n";
+      if(!items.length) text+="未匹配到网点。\n";
+      else items.slice(0,8).forEach(function(it,i){ text+=(i+1)+". "+it.branch.name+"（"+(it.branch.type||"二级支行")+"，距离："+fmtDist(it.dist)+"）："+(it.branch.address||"地址未收录")+"；电话："+(it.branch.phone||"—")+"\n"; });
+      text+="——数据来源：福建海峡银行网点公开信息（2026-08-21 版，共 "+BRANCHES.length+" 家），距离仅供参考。";
+      return text;
+    }
+    function buildShareFromBackend(j){
+      var o=j.org||{};
+      var text="【福建海峡银行最近网点查询结果】（实时核验）\n";
+      text+="机构全称："+(o.fullName||"—")+(o.creditCode?"；\n统一社会信用代码："+o.creditCode:"")+"\n";
+      text+="以下为距离最近的福建海峡银行网点（直线距离估算）：\n";
+      (j.nearest||[]).slice(0,8).forEach(function(x,i){ text+=(i+1)+". "+x.name+"（"+x.type+"，距离："+x.distText+"）："+x.address+"；电话："+x.phone+"\n"; });
+      text+="——数据来源：企查查/天眼查 + 福建海峡银行网点公开信息（共 "+(j.branchCount||"")+" 家），距离仅供参考。";
+      return text;
+    }
+    copyBtn.addEventListener("click",function(){
+      var text = lastBackend ? buildShareFromBackend(lastBackend) : buildShareLocal();
+      shareContent.textContent=text; shareMask.classList.add("show");
+    });
+    function fallbackCopy(t){ var ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); }
+    confirmShare.addEventListener("click",function(){
+      var t=shareContent.textContent;
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(closeShare,function(){fallbackCopy(t);closeShare();});
+      else { fallbackCopy(t); closeShare(); }
+    });
+    closeShare.addEventListener("click",closeShare);
+    shareMask.addEventListener("click",function(e){ if(e.target===shareMask) closeShare(); });
+    function closeShare(){ shareMask.classList.remove("show"); shareContent.textContent=""; }
+
+    // —— 刷新：清空输入与结果，便于再次录入 ——
+    refreshBtn.addEventListener("click",function(){
+      orgNameInput.value="";
+      orgBadge.style.display="none";
+      hero.style.display="none";
+      resultList.innerHTML="";
+      resultActions.style.display="none";
+      resultTip.className="tip";
+      resultTip.textContent="请输入机构名称后点击「查询」。";
+      orgNameInput.focus();
+      toast("已清空，可重新录入");
+    });
+
+    // —— 高级设置折叠 ——
+    if(BACKEND_URL) backendUrlInput.value=BACKEND_URL;
+    if(MAP_KEY) mapKeyInput.value=MAP_KEY;
+    advToggle.addEventListener("click",function(){
+      var show=advPanel.classList.toggle("show");
+      advToggle.classList.toggle("on",show);
+      if(show){
+        if(BACKEND_URL) backendUrlInput.value=BACKEND_URL;
+        if(MAP_KEY) mapKeyInput.value=MAP_KEY;
+      }
+    });
+    saveMapKey.addEventListener("click",function(){
+      var v=mapKeyInput.value.trim();
+      try{ if(v) localStorage.setItem("fjhx_map_key",v); else localStorage.removeItem("fjhx_map_key"); }catch(e){}
+      MAP_KEY=v;
+      backendStatus.style.display="block"; backendStatus.className="tip";
+      backendStatus.textContent=v?"已保存腾讯地图密钥，查询将按机构真实地址精确测算最近网点。":"已清除地图密钥，查询将回退为行政区划中心近似。";
+    });
+    saveBackend.addEventListener("click",function(){
+      var v=backendUrlInput.value.trim();
+      try{ if(v) localStorage.setItem("fjhx_backend_url",v); else localStorage.removeItem("fjhx_backend_url"); }catch(e){}
+      BACKEND_URL=v;
+      backendStatus.style.display="block"; backendStatus.className="tip";
+      backendStatus.textContent=v?"已保存后端地址，查询将走实时接口（企查查/天眼查）。":"已清除，查询使用本机离线估算。";
+    });
+  })();
+  </script>
+</body>
+</html>
