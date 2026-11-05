@@ -24,27 +24,54 @@ DOC_CSS = r""".doc{font-family:"Microsoft YaHei","微软雅黑","Source Han Sans
   -webkit-print-color-adjust:exact;print-color-adjust:exact}
 .doc *{box-sizing:border-box}
 .doc .cover{border-left:7px solid #0D47A1;padding:8px 0 8px 14px;margin-bottom:9px}
-.doc .eyebrow{font-size:9pt;color:#1565C0;letter-spacing:2px;margin-bottom:3px}
+.doc .eyebrow{font-size:9pt;color:#1565C0;letter-spacing:1px;margin-bottom:3px}
 .doc .cover .title{font-size:16pt;font-weight:800;line-height:1.35;color:#0D47A1}
 .doc .cover .subtitle{font-size:10pt;color:#444;margin-top:5px}
 .doc .cover .meta{font-size:8.6pt;color:#888;margin-top:6px;line-height:1.6}
 .doc h2.sec{font-size:12.5pt;font-weight:800;color:#0D47A1;border-bottom:2.5px solid #0D47A1;
   padding-bottom:3px;margin:11px 0 5px;page-break-after:avoid}
+.doc h3.sub{font-size:10.6pt;font-weight:700;color:#0D47A1;margin:7px 0 3px;padding-left:8px;
+  border-left:4px solid #1976D2;page-break-after:avoid}
 .doc p{margin:3px 0;text-align:justify}
+.doc .indent{text-indent:2em}
 .doc table{width:100%;border-collapse:collapse;margin:5px 0 8px;font-size:9pt}
 .doc th,.doc td{border:1px solid #b9c8e0;padding:4px 6px;vertical-align:top;text-align:left}
-.doc th{background:#0D47A1;color:#fff;font-weight:700}
-.doc tr:nth-child(even) td{background:#eef3fb}
-.doc .kv th{width:28%}
+.doc thead th{background:#0D47A1;color:#fff;font-weight:700}
+.doc tbody tr:nth-child(even) td{background:#eef3fb}
+.doc table.kv-table tbody th{background:#0D47A1;color:#fff;width:28%;font-weight:700}
+.doc .abstract{background:#eef3fb;border:1px solid #c9d6ec;border-radius:5px;padding:6px 10px;margin:5px 0 8px}
+.doc .abstract b{color:#0D47A1}
+.doc .toc{background:#f7f9fd;border:1px dashed #b9c8e0;border-radius:5px;padding:6px 10px;margin:5px 0 9px;
+  font-size:9pt;line-height:1.65;color:#334}
+.doc .toc b{color:#0D47A1}
+.doc .coop-card{border:1px solid #c9d6ec;border-radius:6px;margin:5px 0;overflow:hidden}
+.doc .coop-card .head{background:linear-gradient(90deg,#0D47A1,#1976D2);color:#fff;font-weight:700;
+  font-size:10.2pt;padding:3px 9px;page-break-after:avoid}
+.doc .coop-card .body{padding:4px 9px 5px}
+.doc .coop-card .row{display:flex;gap:7px;margin:2px 0}
+.doc .coop-card .tag{flex:0 0 62px;font-weight:700;color:#1565C0;font-size:9.1pt;padding-top:1px}
+.doc .coop-card .val{flex:1}
+.doc .coop-card .path{background:#e8f5e9;border-left:3px solid #2E7D32;padding:3px 7px;margin-top:3px;font-size:9.1pt}
+.doc .coop-card .path b{color:#2E7D32}
+.doc .coop-card .dept{color:#555;font-size:8.8pt;margin-top:2px}
+.doc .coop-card .dept b{color:#0D47A1}
+.doc ol.tight,.doc ul.tight{margin:3px 0 5px;padding-left:20px}
+.doc ol.tight li,.doc ul.tight li{margin:2px 0;text-align:justify}
 .doc .note{font-size:8.6pt;color:#777;margin-top:9px;border-top:1px dashed #ccc;padding-top:5px;line-height:1.6}
 .doc .seal{display:inline-block;background:#E3F2FD;color:#0D47A1;border-radius:10px;padding:1px 8px;font-size:8.8pt;font-weight:700}
 .doc .flag{background:#e8f5e9;border-left:3px solid #2E7D32;padding:4px 8px;margin:4px 0;font-size:9pt}
 @page{size:A4;margin:12mm 13mm}
-@media screen and (max-width:600px){.doc{font-size:11pt}.doc table{font-size:10pt}.doc .cover .title{font-size:17pt}}"""
+@media screen and (max-width:600px){.doc{font-size:11pt}.doc table{font-size:10pt}.doc .cover .title{font-size:17pt}
+  .doc .coop-card .tag{flex:0 0 56px}.doc .toc{line-height:1.8}}"""
 DOC_CSS_JS = json.dumps(DOC_CSS, ensure_ascii=False)
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 BRANCH_JSON = os.path.join(BASE, "server", "data", "branches.json")
+
+# 详细《业务合作参阅材料》模板与生成逻辑（独立片段，构建时内联进单文件 H5）
+BRIEF_DOC_PATH = os.path.join(BASE, "brief_doc.js")
+with open(BRIEF_DOC_PATH, "r", encoding="utf-8") as f:
+    BRIEF_JS = f.read().rstrip("\n")
 
 with open(BRANCH_JSON, "r", encoding="utf-8") as f:
     branch_payload = json.load(f)
@@ -258,6 +285,8 @@ html = r"""<!DOCTYPE html>
     .brief__pill{display:inline-block;background:var(--ok-soft);color:#13683a;font-size:10.5px;
       font-weight:600;border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:1px}
     .brief__desc{font-size:12px;color:var(--ink-2);margin-top:4px;line-height:1.5}
+    .brief__toc{font-size:11px;color:var(--brand);margin-top:6px;line-height:1.6;
+      background:#fff;border:1px dashed var(--brand-line);border-radius:8px;padding:7px 9px;word-break:break-all}
     .sheet--doc .doc{flex:1;overflow:auto;max-height:54vh;padding:10px 8px;
       border:1px solid var(--line);border-radius:9px;background:#fff}
   </style>
@@ -307,12 +336,13 @@ html = r"""<!DOCTYPE html>
         <div class="brief" id="briefBar" style="display:none">
           <div class="brief__ic">📄</div>
           <div class="brief__main">
-            <div class="brief__ttl">业务合作参阅材料 <span class="brief__pill">已连带生成</span></div>
+            <div class="brief__ttl">业务合作参阅材料 <span class="brief__pill">已生成详细版</span></div>
             <div class="brief__desc" id="briefDesc"></div>
+            <div class="brief__toc" id="briefToc"></div>
           </div>
         </div>
         <div class="btn-row" id="briefActions" style="display:none">
-          <button class="btn btn-ghost" id="viewBrief">查看材料</button>
+          <button class="btn btn-ghost" id="viewBrief">查看详细材料</button>
           <button class="btn btn-ghost" id="downloadBrief">下载材料</button>
         </div>
         <div class="btn-row" id="resultActions" style="display:none">
@@ -328,7 +358,7 @@ html = r"""<!DOCTYPE html>
           <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
           <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合腾讯地图公开位置实测匹配留存。</li>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
-          <li>查询成功后可连带生成《业务合作参阅材料》（行内参考），含机构定位、就近网点与工作提示，支持查看、复制与下载。</li>
+          <li>查询成功后连带生成《业务合作参阅材料》（详细版 · 行内参考），含业务研判、服务能力、合作方向、走访提纲与合规提示，支持查看、复制与下载打印；位置与网点信息仅列于附录 A。</li>
         </ul>
       </section>
     </main>
@@ -351,10 +381,11 @@ html = r"""<!DOCTYPE html>
   <!-- 参阅材料预览 -->
   <div class="mask" id="briefMask">
     <div class="sheet sheet--doc">
-      <h3>业务合作参阅材料（行内参考）</h3>
+      <h3>业务合作参阅材料（详细版 · 行内参考）</h3>
       <div class="doc" id="briefPreview"></div>
       <div class="sheet__btns">
         <button class="btn btn-primary" id="copyBrief">复制全文</button>
+        <button class="btn btn-ghost" id="printBrief">下载/打印</button>
         <button class="btn btn-ghost" id="closeBrief">关闭</button>
       </div>
     </div>
@@ -502,117 +533,7 @@ html = r"""<!DOCTYPE html>
       return items;
     }
 
-    // ===== 参阅材料编制 =====
-    // 规范来源：fjhx-doc-pipeline（style-guide.md 品牌排版 / department-map.md 部门口径 /
-    // SKILL.md「已落地 vs 待落地」分节要求）。页面仅使用查询可核验数据，不臆造合作事实、
-    // 不写入财务指标与成效预测；承接主体统一「总行公司金融部」。
-    function todayStr(){
-      var d=new Date(), p=function(n){return (n<10?"0":"")+n;};
-      return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
-    }
-    function briefTitle(q){ return (q.name||"机构")+" 业务合作参阅材料（就近服务网点信息）"; }
-    function regionText(q){
-      if(!q.region) return "未识别（按全域网点测算）";
-      return [q.region.province,q.region.city,q.region.district].filter(Boolean).join(" / ");
-    }
-    function posText(q){
-      if(q.mode==="precise" && q.geo) return "机构真实坐标（腾讯位置服务地点建议接口实时反查）";
-      if(q.mode==="backend") return "后端实时核验（企查查/天眼查）及服务端地理编码";
-      return "行政区划中心近似（未取得机构真实坐标）";
-    }
-    function briefRows(q){
-      var out="";
-      (q.items||[]).slice(0,5).forEach(function(it,i){
-        var b=it.branch||{}, d=(typeof it.dist==="number")?fmtDist(it.dist):(it.distText||"—");
-        out+="<tr><td>"+(i+1)+"</td><td>"+esc(b.name||"—")+"</td><td>"+esc(d)+
-             "</td><td>"+esc(b.address||"地址未收录")+"</td><td>"+esc(b.phone||"—")+"</td></tr>";
-      });
-      return out||"<tr><td colspan='5'>未匹配到网点</td></tr>";
-    }
-    function briefFragment(q){
-      var g=q.geo||{}, org=q.org||{};
-      var geoLine=(q.mode==="precise"&&g.title)
-        ? "<tr><th>地图核验名称</th><td>"+esc(g.title)+"</td></tr>"+
-          "<tr><th>地图核验地址</th><td>"+esc(g.address||"接口未返回详细地址")+"</td></tr>"+
-          "<tr><th>核验经纬度</th><td>"+esc(String(g.lat))+", "+esc(String(g.lng))+"</td></tr>"
-        : "";
-      var orgLine=(q.mode==="backend"&&(org.fullName||org.creditCode))
-        ? "<tr><th>核验机构全称</th><td>"+esc(org.fullName||"—")+"</td></tr>"+
-          "<tr><th>统一社会信用代码</th><td>"+esc(org.creditCode||"—")+"</td></tr>"+
-          "<tr><th>登记注册地址</th><td>"+esc(org.address||"—")+"</td></tr>"
-        : "";
-      return ""+
-        '<div class="cover">'+
-          '<div class="eyebrow">福建海峡银行 · 总行公司金融部</div>'+
-          '<div class="title">'+esc(briefTitle(q))+'</div>'+
-          '<div class="subtitle">机构业务走访前参阅 · 基于公开网点信息与地理位置测算</div>'+
-          '<div class="meta">编制日期：'+todayStr()+'　|　数据基准：福建海峡银行官网公开网点目录（2026-08-21 版，共 '+BRANCHES.length+' 家）　|　<span class="seal">行内参考 请勿外传</span></div>'+
-        '</div>'+
-        '<h2 class="sec">一、机构定位信息（查询结果）</h2>'+
-        '<table class="kv">'+
-          '<tr><th>录入机构名称</th><td>'+esc(q.name||"—")+'</td></tr>'+ geoLine + orgLine +
-          '<tr><th>识别行政区划</th><td>'+esc(regionText(q))+'</td></tr>'+
-          '<tr><th>定位方式</th><td>'+esc(posText(q))+'</td></tr>'+
-          '<tr><th>测算口径</th><td>基于经纬度的 Haversine 直线距离估算，非步行或驾车路程</td></tr>'+
-        '</table>'+
-        '<h2 class="sec">二、就近服务网点（客观查询结果）</h2>'+
-        '<p>按直线距离升序，列示距离最近的 '+Math.min((q.items||[]).length,5)+' 家网点；网点名称、地址与公开电话均取自官网公开网点目录。</p>'+
-        '<table><thead><tr><th style="width:6%">序号</th><th style="width:26%">网点名称</th><th style="width:14%">直线距离</th><th>网点地址</th><th style="width:16%">公开电话</th></tr></thead><tbody>'+briefRows(q)+'</tbody></table>'+
-        '<h2 class="sec">三、工作提示（待落地，非既有合作事实）</h2>'+
-        '<div class="flag">以下为可开展的工作方向，不代表既有合作基础、已达成事项或任何服务承诺。</div>'+
-        '<p>1. 就近网点信息可用于走访路线安排与属地服务衔接；相关事项由<b>总行公司金融部</b>统筹，属地经营机构按职责承接。</p>'+
-        '<p>2. 涉及账户开立、资金存放、结算服务等事项，须按行内制度与监管要求履行尽职调查、审批及合规审查程序后办理。</p>'+
-        '<p>3. 本材料不含合作进展、财务数据及成效预测；如需形成正式合作方案，应另行开展调研并按流程报审。</p>'+
-        '<div class="note"><b>资料来源与使用说明：</b>机构地址与坐标取自腾讯位置服务地点建议接口（查询时实时返回）；网点名称、地址及公开电话取自福建海峡银行官网公开网点目录（2026-08-21 版，共 '+BRANCHES.length+' 家）；距离按 Haversine 公式直线估算。本材料仅供行内走访前参阅，不构成服务承诺或授信意向；机构信息以官方登记为准，网点营业状态以官方公告为准。<br><b>编制：总行公司金融部</b>　|　<b>行内参考 请勿外传</b></div>';
-    }
-    function briefText(q){
-      var g=q.geo||{}, org=q.org||{}, L=[];
-      L.push("【"+briefTitle(q)+"】");
-      L.push("福建海峡银行 · 总行公司金融部 | 编制日期："+todayStr()+" | 行内参考 请勿外传");
-      L.push(""); L.push("一、机构定位信息（查询结果）");
-      L.push("录入机构名称："+(q.name||"—"));
-      if(q.mode==="precise"&&g.title){ L.push("地图核验名称："+g.title); L.push("地图核验地址："+(g.address||"—")); L.push("核验经纬度："+g.lat+", "+g.lng); }
-      if(q.mode==="backend"&&org.fullName){ L.push("核验机构全称："+org.fullName); L.push("统一社会信用代码："+(org.creditCode||"—")); L.push("登记注册地址："+(org.address||"—")); }
-      L.push("识别行政区划："+regionText(q)); L.push("定位方式："+posText(q));
-      L.push(""); L.push("二、就近服务网点（客观查询结果）");
-      (q.items||[]).slice(0,5).forEach(function(it,i){
-        var b=it.branch||{}, d=(typeof it.dist==="number")?fmtDist(it.dist):(it.distText||"—");
-        L.push((i+1)+". "+(b.name||"—")+"｜"+d+"｜"+(b.address||"地址未收录")+"｜"+(b.phone||"—"));
-      });
-      L.push(""); L.push("三、工作提示（待落地，非既有合作事实）");
-      L.push("1. 就近网点信息可用于走访路线安排与属地服务衔接；相关事项由总行公司金融部统筹，属地经营机构按职责承接。");
-      L.push("2. 涉及账户开立、资金存放、结算服务等事项，须按行内制度与监管要求履行尽职调查、审批及合规审查程序后办理。");
-      L.push("3. 本材料不含合作进展、财务数据及成效预测；如需形成正式合作方案，应另行开展调研并按流程报审。");
-      L.push("");
-      L.push("资料来源：腾讯位置服务地点建议接口；福建海峡银行官网公开网点目录（2026-08-21 版，共 "+BRANCHES.length+" 家）；距离按 Haversine 直线估算，非步行/驾车路程。");
-      L.push("本材料仅供行内走访前参阅，不构成服务承诺或授信意向。编制：总行公司金融部。行内参考 请勿外传。");
-      return L.join("\n");
-    }
-    function renderBriefBar(){
-      if(!lastQuery){ briefBar.style.display="none"; briefActions.style.display="none"; return; }
-      briefBar.style.display="flex"; briefActions.style.display="flex";
-      briefDesc.textContent="已按行内参阅材料体例生成，含机构定位、就近网点与工作提示；可查看、复制或下载。";
-      briefPreview.innerHTML=briefFragment(lastQuery);   // 查询成功即连带生成
-    }
-    function downloadBriefFile(){
-      if(!lastQuery){ toast("请先查询机构"); return; }
-      var q=lastQuery, title=briefTitle(q);
-      var full='<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n'+
-        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'+
-        '<title>'+esc(title)+'</title>\n<style>\n'+DOC_CSS+
-        '\nhtml,body{margin:0;padding:0;background:#fff}\n.doc{max-width:210mm;margin:0 auto;padding:6mm 4mm}\n'+
-        '@media print{.doc{max-width:none;padding:0}}\n</style>\n</head>\n<body>\n'+
-        '<div class="doc">'+briefFragment(q)+'</div>\n</body>\n</html>';
-      try{
-        var blob=new Blob(["\ufeff"+full],{type:"text/html;charset=utf-8"});
-        var url=URL.createObjectURL(blob), a=document.createElement("a");
-        var safe=(q.name||"机构").replace(/[^\u4e00-\u9fa5A-Za-z0-9_-]/g,"_").slice(0,24);
-        a.href=url; a.download="业务合作参阅材料_"+safe+"_"+todayStr()+".html";
-        document.body.appendChild(a); a.click();
-        setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); },1500);
-        toast("材料已生成并下载");
-      }catch(e){ toast("当前浏览器不支持下载，请改用「复制全文」"); }
-    }
+    __BRIEF_JS__
 
     function renderResult(items, baseLabel, approxNote){
       resultActions.style.display="flex";
@@ -833,6 +754,7 @@ html = html.replace("__ICON_B64__", "data:image/png;base64," + ICON_B64)
 html = html.replace("__MAP_KEY_EXPR__", MAP_KEY_EXPR)
 html = html.replace("__DOC_CSS_JS__", DOC_CSS_JS)
 html = html.replace("__DOC_CSS__", DOC_CSS)
+html = html.replace("__BRIEF_JS__", BRIEF_JS)
 with open(out, "w", encoding="utf-8") as f:
     f.write(html)
 print("written:", out, "bytes:", len(html.encode("utf-8")), "branches:", len(branch_payload["branches"]))
