@@ -8,7 +8,7 @@
 - 后端实时核验（企查查/天眼查）逻辑保留，作为可折叠「高级设置」，默认收起。
 数据：server/data/branches.json 91 家权威网点 + 内置区县中心坐标，全部内联。
 """
-import json, os, base64
+import json, os, base64, io
 
 # 定位服务凭据：以字符编码形式存放，构建时注入为 JS 运行时表达式，
 # 避免明文出现在页面源码、设置项与构建脚本中（用户 2026-11-05 要求隐藏）。
@@ -69,9 +69,13 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 BRANCH_JSON = os.path.join(BASE, "server", "data", "branches.json")
 
 # 详细《业务合作参阅材料》模板与生成逻辑（独立片段，构建时内联进单文件 H5）
-BRIEF_DOC_PATH = os.path.join(BASE, "brief_doc.js")
-with open(BRIEF_DOC_PATH, "r", encoding="utf-8") as f:
-    BRIEF_JS = f.read().rstrip("\n")
+# org_struct.js：单位治理与组织画像知识库（负责人 / 内设架构与职能 / 上级及下属单位）
+# brief_doc.js ：章节编排、渲染与导出
+_BRIEF_PARTS = ["org_struct.js", "brief_doc.js"]
+BRIEF_JS = "\n".join(
+    io.open(os.path.join(BASE, n), "r", encoding="utf-8").read().rstrip("\n")
+    for n in _BRIEF_PARTS
+)
 
 with open(BRANCH_JSON, "r", encoding="utf-8") as f:
     branch_payload = json.load(f)
@@ -289,6 +293,32 @@ html = r"""<!DOCTYPE html>
       background:#fff;border:1px dashed var(--brand-line);border-radius:8px;padding:7px 9px;word-break:break-all}
     .sheet--doc .doc{flex:1;overflow:auto;max-height:54vh;padding:10px 8px;
       border:1px solid var(--line);border-radius:9px;background:#fff}
+    /* ===== 全文全屏浏览 + 现场补录（2026-11-06） ===== */
+    .sheet--doc .sheet__hd{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+    .sheet--doc .sheet__hd h3{flex:1;margin:0;font-size:15px;line-height:1.4}
+    .fs-btn{flex:0 0 auto;border:1px solid var(--brand-line);background:#fff;color:var(--brand-deep);
+      border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .fs-btn:active{background:var(--brand-soft)}
+    .mask.fs-pad{padding:0}
+    .mask .sheet--doc.fs{width:100%;max-width:none;height:100vh;height:100dvh;max-height:none;
+      border-radius:0;padding:12px 14px 10px}
+    .sheet--doc.fs .doc{max-height:none;flex:1;padding:14px 10px;-webkit-overflow-scrolling:touch}
+    .sheet--doc.fs .sheet__btns{margin-top:9px}
+    body.fs-lock{overflow:hidden}
+    .fill{border:1px dashed var(--brand-line);background:var(--brand-soft);border-radius:9px;
+      padding:8px 10px;margin-bottom:10px;font-size:12px}
+    .fill summary{cursor:pointer;color:var(--brand-deep);font-weight:700;list-style:none;line-height:1.5}
+    .fill summary::-webkit-details-marker{display:none}
+    .fill summary:before{content:"▸ "}
+    .fill[open] summary:before{content:"▾ "}
+    .fill__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 9px;margin-top:9px}
+    .fill label{display:block;color:var(--ink-2);font-size:11px}
+    .fill input{width:100%;height:34px;border:1px solid var(--line);border-radius:7px;
+      padding:0 8px;margin-top:3px;background:#fff;font-size:12.5px;color:var(--ink)}
+    .fill__tip{color:var(--ink-3);font-size:11px;line-height:1.55;margin-top:8px}
+    .fill__row{display:flex;gap:9px;margin-top:8px}
+    .fill__row .btn{height:34px;flex:0 0 auto;padding:0 12px;font-size:12px}
+    @media (max-width:560px){.fill__grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -358,7 +388,7 @@ html = r"""<!DOCTYPE html>
           <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
           <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合腾讯地图公开位置实测匹配留存。</li>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
-          <li>查询成功后连带生成《业务合作参阅材料》（详细版 · 行内参考），含业务研判、服务能力、合作方向、走访提纲与合规提示，支持查看、复制与下载打印；位置与网点信息仅列于附录 A。</li>
+          <li>查询成功后连带生成《业务合作参阅材料》（详细版 · 行内参考），含单位治理与组织画像（负责人职务口径、内设架构与主要职能、上级及下属单位）、业务研判、服务能力、合作方向、走访提纲与合规提示；支持全屏浏览、现场补录、复制与下载打印；位置与网点信息仅列于附录 A。</li>
         </ul>
       </section>
     </main>
@@ -380,8 +410,25 @@ html = r"""<!DOCTYPE html>
 
   <!-- 参阅材料预览 -->
   <div class="mask" id="briefMask">
-    <div class="sheet sheet--doc">
-      <h3>业务合作参阅材料（详细版 · 行内参考）</h3>
+    <div class="sheet sheet--doc" id="briefSheet">
+      <div class="sheet__hd">
+        <h3>业务合作参阅材料（详细版 · 行内参考）</h3>
+        <button class="fs-btn" type="button" id="fullscreenBrief">⛶ 全屏</button>
+      </div>
+      <details class="fill" id="briefFill">
+        <summary>✎ 现场补录：负责人 / 上级及下属单位（选填，仅本页有效）</summary>
+        <div class="fill__grid">
+          <label>主要负责人姓名<input type="text" id="fillLeader" maxlength="30" placeholder="以官方任免文件为准"></label>
+          <label>分管财务负责人<input type="text" id="fillFinanceLeader" maxlength="30" placeholder="选填"></label>
+          <label>办公室 / 财务对接人<input type="text" id="fillContact" maxlength="30" placeholder="选填"></label>
+          <label>其他相关 / 对接人<input type="text" id="fillOtherLeader" maxlength="30" placeholder="选填"></label>
+          <label>上级主管单位<input type="text" id="fillSuperior" maxlength="60" placeholder="以机构编制文件为准"></label>
+          <label>内设机构核实情况<input type="text" id="fillInnerOrg" maxlength="60" placeholder="选填"></label>
+          <label>下属 / 归口管理单位<input type="text" id="fillSubordinate" maxlength="60" placeholder="选填"></label>
+        </div>
+        <div class="fill__tip">补录内容即时写入第三章，并同步到「复制全文」「下载/打印」；仅保存在当前页面内存，不上传、不持久化，退出页面即失效。未填写项一律标注「待核实」。</div>
+        <div class="fill__row"><button class="btn btn-ghost" type="button" id="fillReset">清空补录</button></div>
+      </details>
       <div class="doc" id="briefPreview"></div>
       <div class="sheet__btns">
         <button class="btn btn-primary" id="copyBrief">复制全文</button>
@@ -424,8 +471,9 @@ html = r"""<!DOCTYPE html>
         saveBackend=$("saveBackend"), backendStatus=$("backendStatus"),
         briefBar=$("briefBar"), briefDesc=$("briefDesc"), briefActions=$("briefActions"),
         viewBrief=$("viewBrief"), downloadBrief=$("downloadBrief"),
-        briefMask=$("briefMask"), briefPreview=$("briefPreview"),
-        copyBrief=$("copyBrief"), closeBriefBtn=$("closeBrief");
+        briefMask=$("briefMask"), briefSheet=$("briefSheet"), briefPreview=$("briefPreview"),
+        copyBrief=$("copyBrief"), closeBriefBtn=$("closeBrief"),
+        fullscreenBrief=$("fullscreenBrief"), fillResetBtn=$("fillReset");
 
     function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
     function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},1800); }
@@ -701,6 +749,7 @@ html = r"""<!DOCTYPE html>
       resultActions.style.display="none";
       lastQuery=null;
       briefBar.style.display="none"; briefActions.style.display="none";
+      exitBriefFs(); resetBriefFields(); clearFillInputs();
       briefMask.classList.remove("show"); briefPreview.innerHTML="";
       resultTip.className="tip";
       resultTip.textContent="请输入机构名称后点击「查询」。";
@@ -708,10 +757,58 @@ html = r"""<!DOCTYPE html>
       toast("已清空，可重新录入");
     });
 
+    // —— 全文全屏浏览：优先浏览器全屏 API，微信内置浏览器不支持时回退为视口铺满 ——
+    function isBriefFs(){ return briefMask.classList.contains("fs-pad"); }
+    function syncFsBtn(){ if(fullscreenBrief) fullscreenBrief.textContent=isBriefFs()?"退出全屏":"⛶ 全屏"; }
+    function enterBriefFs(){
+      briefMask.classList.add("fs-pad"); briefSheet.classList.add("fs");
+      document.body.classList.add("fs-lock"); syncFsBtn();
+      try{
+        var el=document.documentElement;
+        if(el.requestFullscreen){ var pr=el.requestFullscreen(); if(pr&&pr.catch) pr.catch(function(){}); }
+        else if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); }
+      }catch(e){}
+    }
+    function exitBriefFs(){
+      briefMask.classList.remove("fs-pad"); briefSheet.classList.remove("fs");
+      document.body.classList.remove("fs-lock"); syncFsBtn();
+      try{
+        if(document.fullscreenElement||document.webkitFullscreenElement){
+          var fn=document.exitFullscreen||document.webkitExitFullscreen;
+          if(fn) fn.call(document);
+        }
+      }catch(e){}
+    }
+    function rerenderBrief(){
+      if(!lastQuery) return;
+      var top=briefPreview.scrollTop;
+      briefPreview.innerHTML=briefFragment(lastQuery);
+      briefPreview.scrollTop=top;
+    }
+
+    // —— 现场补录：负责人 / 上级及下属单位，仅内存，不持久化 ——
+    var FILL_MAP={fillLeader:"leader",fillFinanceLeader:"financeLeader",fillContact:"contact",
+                  fillOtherLeader:"otherLeader",fillSuperior:"superior",
+                  fillInnerOrg:"innerOrg",fillSubordinate:"subordinate"};
+    function clearFillInputs(){
+      Object.keys(FILL_MAP).forEach(function(id){ var el=$(id); if(el) el.value=""; });
+    }
+    Object.keys(FILL_MAP).forEach(function(id){
+      var el=$(id); if(!el) return;
+      el.addEventListener("input",function(){
+        setBriefField(FILL_MAP[id],el.value);
+        rerenderBrief();
+      });
+    });
+    if(fillResetBtn) fillResetBtn.addEventListener("click",function(){
+      resetBriefFields(); clearFillInputs(); rerenderBrief(); toast("补录内容已清空");
+    });
+
     // —— 参阅材料交互 ——
     viewBrief.addEventListener("click",function(){
       if(!lastQuery){ toast("请先查询机构"); return; }
       briefPreview.innerHTML=briefFragment(lastQuery);
+      briefPreview.scrollTop=0;
       briefMask.classList.add("show");
     });
     downloadBrief.addEventListener("click",downloadBriefFile);
@@ -722,8 +819,20 @@ html = r"""<!DOCTYPE html>
         navigator.clipboard.writeText(t).then(function(){toast("全文已复制");},function(){fallbackCopy(t);toast("全文已复制");});
       } else { fallbackCopy(t); toast("全文已复制"); }
     });
-    closeBriefBtn.addEventListener("click",function(){ briefMask.classList.remove("show"); });
-    briefMask.addEventListener("click",function(e){ if(e.target===briefMask) briefMask.classList.remove("show"); });
+    if(fullscreenBrief) fullscreenBrief.addEventListener("click",function(){
+      if(isBriefFs()) exitBriefFs(); else enterBriefFs();
+    });
+    function closeBriefSheet(){ exitBriefFs(); briefMask.classList.remove("show"); }
+    closeBriefBtn.addEventListener("click",closeBriefSheet);
+    briefMask.addEventListener("click",function(e){ if(e.target===briefMask) closeBriefSheet(); });
+    ["fullscreenchange","webkitfullscreenchange"].forEach(function(ev){
+      document.addEventListener(ev,function(){
+        if(isBriefFs() && !(document.fullscreenElement||document.webkitFullscreenElement)) exitBriefFs();
+      });
+    });
+    document.addEventListener("keydown",function(e){
+      if((e.key==="Escape"||e.keyCode===27) && isBriefFs()) exitBriefFs();
+    });
 
     // —— 高级设置折叠（仅保留可选的后端代理；定位凭据已内置且不可见） ——
     if(BACKEND_URL) backendUrlInput.value=BACKEND_URL;
