@@ -69,7 +69,8 @@ for(const [txt,expect] of cases){
 
 // 4) 参阅材料生成逻辑实跑（不依赖浏览器，注入最小 DOM/依赖桩）
 console.log('\n参阅材料生成实跑：');
-const briefJs = fs.readFileSync(path.join(__dirname, 'brief_doc.js'), 'utf-8');
+const briefJs = ['org_struct.js','brief_doc.js'].map(n =>
+  fs.readFileSync(path.join(__dirname, n), 'utf-8')).join('\n');
 const stubEl = () => ({ style:{}, textContent:'', innerHTML:'', value:'',
   addEventListener(){}, classList:{ add(){}, remove(){}, toggle(){} } });
 const bx = {
@@ -102,15 +103,56 @@ for (const nm of demoNames){
   const secs=(frag.match(/<h2 class="sec">/g)||[]).length;
   const cards=(frag.match(/class="coop-card"/g)||[]).length;
   const bad=['undefined','NaN','[object Object]'].filter(k=>frag.indexOf(k)>=0);
-  const ok = secs===11 && cards===4 && frag.length>9000 && text.length>6000 &&
+  const ok = secs===12 && cards===4 && frag.length>14000 && text.length>8500 &&
              frag.indexOf('行内参考 请勿外传')>=0 && frag.indexOf('附录 A')>=0 &&
-             frag.indexOf('附录 B')>=0 && bad.length===0 && outline.length===11;
+             frag.indexOf('附录 B')>=0 && frag.indexOf('单位治理与组织画像')>=0 &&
+             frag.indexOf('主要及相关负责人')>=0 && frag.indexOf('上级主管与业务指导单位')>=0 &&
+             frag.indexOf('下属及归口管理单位')>=0 &&
+             frag.indexOf('内设机构及职责分工')>=0 && bad.length===0 && outline.length===12;
   if(!ok) briefOk=false;
   console.log(`  [${nm}] 章节${secs} 方向卡片${cards} HTML ${frag.length}字 文本 ${text.length}字 异常值[${bad.join(',')||'无'}] => ${ok?'通过':'失败'}`);
 }
 const distinct = new Set(Object.values(frags).map(f=>f.slice(
-  f.indexOf('<h2 class="sec">三、业务场景'), f.indexOf('<h2 class="sec">四、机构业务'))));
+  f.indexOf('<h2 class="sec">四、业务场景'), f.indexOf('<h2 class="sec">五、机构业务'))));
 console.log('  按机构差异化场景版本数:', distinct.size, '（应 >1）');
 if(distinct.size<2) briefOk=false;
 console.log('  参阅材料实跑:', briefOk?'通过':'失败');
 if(!briefOk) process.exitCode=1;
+
+// 5) 现场补录实跑：补录值须同步进入 HTML 预览与复制全文 / 下载同源内容
+console.log('\n现场补录与全屏要素：');
+let extraOk = true;
+try {
+  vm.runInContext('resetBriefFields()', bx);
+  bx.lastQuery = {name:'福建省财政厅', mode:'precise', region:{province:'福建省',city:'福州市',district:'鼓楼区'},
+    geo:{title:'福建省财政厅',address:'福州市鼓楼区示例路1号',lat:26.09,lng:119.29}, items:demoItems};
+  const before = vm.runInContext('briefFragment(lastQuery)', bx);
+  vm.runInContext('setBriefField("leader","补录校验姓名")', bx);
+  vm.runInContext('setBriefField("superior","补录校验上级单位")', bx);
+  vm.runInContext('setBriefField("subordinate","补录校验下属单位")', bx);
+  const after = vm.runInContext('briefFragment(lastQuery)', bx);
+  const txtAfter = vm.runInContext('briefText(lastQuery)', bx);
+  const checks = {
+    '补录前为待核实': before.indexOf('待核实（现场补录）') >= 0,
+    '姓名写入预览': after.indexOf('补录校验姓名') >= 0,
+    '上级单位写入预览': after.indexOf('补录校验上级单位') >= 0,
+    '下属单位写入预览': after.indexOf('补录校验下属单位') >= 0,
+    '姓名同步到复制全文': txtAfter.indexOf('补录校验姓名') >= 0,
+    '状态变为已补录': after.indexOf('已补录（待复核）') >= 0
+  };
+  Object.keys(checks).forEach(k => { console.log('  ' + k + ':', checks[k] ? '通过' : '失败'); if(!checks[k]) extraOk = false; });
+  vm.runInContext('resetBriefFields()', bx);
+} catch(e){ console.log('  补录实跑异常:', e.message); extraOk = false; }
+
+const pageChecks = {
+  '全屏按钮': html.indexOf('id="fullscreenBrief"') >= 0,
+  '全屏样式': html.indexOf('.sheet--doc.fs .doc') >= 0,
+  '全屏切换逻辑': html.indexOf('function enterBriefFs()') >= 0 && html.indexOf('function exitBriefFs()') >= 0,
+  '补录输入区': html.indexOf('id="briefFill"') >= 0,
+  '补录字段映射': (html.match(/fill[A-Za-z]+:/g)||[]).length >= 7,
+  '组织画像知识库': html.indexOf('var ORG_STRUCT=') >= 0,
+  '章节标题': html.indexOf('三、单位治理与组织画像') >= 0 && html.indexOf('十、合规与风险提示') >= 0
+};
+Object.keys(pageChecks).forEach(k => { console.log('  ' + k + ':', pageChecks[k] ? '通过' : '失败'); if(!pageChecks[k]) extraOk = false; });
+console.log('  补充校验:', extraOk ? '通过' : '失败');
+if(!extraOk) process.exitCode = 1;
