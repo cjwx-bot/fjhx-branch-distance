@@ -183,6 +183,32 @@
       background:#fff;border:1px dashed var(--brand-line);border-radius:8px;padding:7px 9px;word-break:break-all}
     .sheet--doc .doc{flex:1;overflow:auto;max-height:54vh;padding:10px 8px;
       border:1px solid var(--line);border-radius:9px;background:#fff}
+    /* ===== 全文全屏浏览 + 现场补录（2026-11-06） ===== */
+    .sheet--doc .sheet__hd{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+    .sheet--doc .sheet__hd h3{flex:1;margin:0;font-size:15px;line-height:1.4}
+    .fs-btn{flex:0 0 auto;border:1px solid var(--brand-line);background:#fff;color:var(--brand-deep);
+      border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .fs-btn:active{background:var(--brand-soft)}
+    .mask.fs-pad{padding:0}
+    .mask .sheet--doc.fs{width:100%;max-width:none;height:100vh;height:100dvh;max-height:none;
+      border-radius:0;padding:12px 14px 10px}
+    .sheet--doc.fs .doc{max-height:none;flex:1;padding:14px 10px;-webkit-overflow-scrolling:touch}
+    .sheet--doc.fs .sheet__btns{margin-top:9px}
+    body.fs-lock{overflow:hidden}
+    .fill{border:1px dashed var(--brand-line);background:var(--brand-soft);border-radius:9px;
+      padding:8px 10px;margin-bottom:10px;font-size:12px}
+    .fill summary{cursor:pointer;color:var(--brand-deep);font-weight:700;list-style:none;line-height:1.5}
+    .fill summary::-webkit-details-marker{display:none}
+    .fill summary:before{content:"▸ "}
+    .fill[open] summary:before{content:"▾ "}
+    .fill__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 9px;margin-top:9px}
+    .fill label{display:block;color:var(--ink-2);font-size:11px}
+    .fill input{width:100%;height:34px;border:1px solid var(--line);border-radius:7px;
+      padding:0 8px;margin-top:3px;background:#fff;font-size:12.5px;color:var(--ink)}
+    .fill__tip{color:var(--ink-3);font-size:11px;line-height:1.55;margin-top:8px}
+    .fill__row{display:flex;gap:9px;margin-top:8px}
+    .fill__row .btn{height:34px;flex:0 0 auto;padding:0 12px;font-size:12px}
+    @media (max-width:560px){.fill__grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -252,7 +278,7 @@
           <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
           <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合腾讯地图公开位置实测匹配留存。</li>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
-          <li>查询成功后连带生成《业务合作参阅材料》（详细版 · 行内参考），含业务研判、服务能力、合作方向、走访提纲与合规提示，支持查看、复制与下载打印；位置与网点信息仅列于附录 A。</li>
+          <li>查询成功后连带生成《业务合作参阅材料》（详细版 · 行内参考），含单位治理与组织画像（负责人职务口径、内设架构与主要职能、上级及下属单位）、业务研判、服务能力、合作方向、走访提纲与合规提示；支持全屏浏览、现场补录、复制与下载打印；位置与网点信息仅列于附录 A。</li>
         </ul>
       </section>
     </main>
@@ -274,8 +300,25 @@
 
   <!-- 参阅材料预览 -->
   <div class="mask" id="briefMask">
-    <div class="sheet sheet--doc">
-      <h3>业务合作参阅材料（详细版 · 行内参考）</h3>
+    <div class="sheet sheet--doc" id="briefSheet">
+      <div class="sheet__hd">
+        <h3>业务合作参阅材料（详细版 · 行内参考）</h3>
+        <button class="fs-btn" type="button" id="fullscreenBrief">⛶ 全屏</button>
+      </div>
+      <details class="fill" id="briefFill">
+        <summary>✎ 现场补录：负责人 / 上级及下属单位（选填，仅本页有效）</summary>
+        <div class="fill__grid">
+          <label>主要负责人姓名<input type="text" id="fillLeader" maxlength="30" placeholder="以官方任免文件为准"></label>
+          <label>分管财务负责人<input type="text" id="fillFinanceLeader" maxlength="30" placeholder="选填"></label>
+          <label>办公室 / 财务对接人<input type="text" id="fillContact" maxlength="30" placeholder="选填"></label>
+          <label>其他相关 / 对接人<input type="text" id="fillOtherLeader" maxlength="30" placeholder="选填"></label>
+          <label>上级主管单位<input type="text" id="fillSuperior" maxlength="60" placeholder="以机构编制文件为准"></label>
+          <label>内设机构核实情况<input type="text" id="fillInnerOrg" maxlength="60" placeholder="选填"></label>
+          <label>下属 / 归口管理单位<input type="text" id="fillSubordinate" maxlength="60" placeholder="选填"></label>
+        </div>
+        <div class="fill__tip">补录内容即时写入第三章，并同步到「复制全文」「下载/打印」；仅保存在当前页面内存，不上传、不持久化，退出页面即失效。未填写项一律标注「待核实」。</div>
+        <div class="fill__row"><button class="btn btn-ghost" type="button" id="fillReset">清空补录</button></div>
+      </details>
       <div class="doc" id="briefPreview"></div>
       <div class="sheet__btns">
         <button class="btn btn-primary" id="copyBrief">复制全文</button>
@@ -318,8 +361,9 @@
         saveBackend=$("saveBackend"), backendStatus=$("backendStatus"),
         briefBar=$("briefBar"), briefDesc=$("briefDesc"), briefActions=$("briefActions"),
         viewBrief=$("viewBrief"), downloadBrief=$("downloadBrief"),
-        briefMask=$("briefMask"), briefPreview=$("briefPreview"),
-        copyBrief=$("copyBrief"), closeBriefBtn=$("closeBrief");
+        briefMask=$("briefMask"), briefSheet=$("briefSheet"), briefPreview=$("briefPreview"),
+        copyBrief=$("copyBrief"), closeBriefBtn=$("closeBrief"),
+        fullscreenBrief=$("fullscreenBrief"), fillResetBtn=$("fillReset");
 
     function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
     function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},1800); }
@@ -427,17 +471,349 @@
       return items;
     }
 
-        // ===== 业务合作参阅材料（详细版 · 2026-11-05 用户要求）=====
+        // ===== 单位治理与组织画像（2026-11-06 用户要求）=====
+    // 能力边界：静态页面不具备联网核验与官方登记调取能力，姓名、任免与具体上下级单位
+    // 一律不预置、不臆造。本章采用「职务口径 + 同类机构通行架构 + 现场补录 + 核实渠道」
+    // 的方式明确上述信息，并全程标注研判 / 待核实，避免把通用框架当作该单位事实。
+    var BRIEF_FIELDS={leader:"",financeLeader:"",contact:"",otherLeader:"",
+                      superior:"",innerOrg:"",subordinate:""};
+    function setBriefField(k,v){
+      if(Object.prototype.hasOwnProperty.call(BRIEF_FIELDS,k)){
+        BRIEF_FIELDS[k]=String(v==null?"":v).trim().slice(0,60);
+      }
+    }
+    function resetBriefFields(){
+      Object.keys(BRIEF_FIELDS).forEach(function(k){ BRIEF_FIELDS[k]=""; });
+    }
+    function F(k){ return BRIEF_FIELDS[k]||"待核实（现场补录）"; }
+    function FS(k){ return BRIEF_FIELDS[k]?"已补录（待复核）":"待核实"; }
+
+    // 行政层级按名称关键词研判，仅用于选取上级 / 下属单位的层级口径
+    function orgLevel(name){
+      var t=String(name||"");
+      if(/省|自治区|省委|省政府/.test(t)) return {k:"province",label:"省级（研判）"};
+      if(/市(?!场)/.test(t)) return {k:"city",label:"地市级（研判）"};
+      if(/县|区|旗/.test(t)) return {k:"county",label:"县区级（研判）"};
+      if(/镇|乡|街道/.test(t)) return {k:"town",label:"乡镇街道级（研判）"};
+      return {k:"unknown",label:"层级未识别（待核实）"};
+    }
+
+    // 主要及相关负责人：只列职务口径，姓名由现场补录
+    var LEADER_ROLES=[
+      {key:"leader",role:"主要负责人（党组书记 / 行政正职）",
+       focus:"统筹全面工作；涉及重大事项须经正式渠道预约，不作直接业务推介"},
+      {key:"financeLeader",role:"分管财务 / 机关事务负责人",
+       focus:"分管经费、财务与后勤保障；账户与资金事项的分管口径须先确认"},
+      {key:"contact",role:"办公室（综合处）/ 财务部门负责人",
+       focus:"日常归口窗口；开户资料、对账与结算需求的主对接人"},
+      {key:"otherLeader",role:"人事 / 采购 / 后勤归口负责人",
+       focus:"人员经费发放、采购付款与资产管理的流程核实对象"},
+      {key:"",role:"派驻纪检监察 / 内审联络（非营销对接）",
+       focus:"仅用于合规事项了解，不作为业务拓展对象，不录入个人信息"}
+    ];
+
+    // 下属 / 归口管理单位：按单位类型列示一般关系与核实要点
+    var LOWER_HINT={
+      "直属事业单位":["由本单位举办或管理，多为独立法人、单独核算","核实法人登记、预算管理形式与是否已分别开立账户"],
+      "派出机构 / 分支机构":["按授权在属地行使部分管理职能","核实是否具备独立开户主体资格与授权范围"],
+      "下级对口部门":["业务指导关系，经费与账户通常相互独立","核实是否存在统一归集、集中支付或指定办理渠道"],
+      "归口管理的预算单位":["纳入本部门预算编报与拨款范围","核实预算级次、拨款路径与专户管理要求"],
+      "所属社团 / 学会 / 协会":["依章程开展活动，多为社团法人","核实登记类型、账户主体与经费管理口径"],
+      "后勤 / 服务实体":["承担机关后勤、会务或物业服务","核实核算方式、采购付款与保证金管理流程"]
+    };
+
+    // 按机构类别给出「主要职能 + 常见内设机构 + 下属单位类型」通行口径（均属研判）
+    var ORG_STRUCT={
+      fiscal:{
+        func:["编制与执行本级预算、决算，管理预算单位账户与经费拨付口径",
+              "组织非税收入、行政事业性收费征管与缴库管理",
+              "按规定的竞争性选择程序组织财政性资金存放管理",
+              "实施政府采购监督管理与项目资金支付管理",
+              "开展财政监督、预算绩效管理与会计管理"],
+        inner:[["办公室","综合协调、文电会务、督查与后勤保障"],
+               ["预算处（科）","年度预算编制、预算调整与预算执行管理"],
+               ["国库处（科）","国库集中支付、资金调度与账户管理"],
+               ["综合处 / 非税收入管理处","非税收入征管、票据与收缴管理"],
+               ["政府采购监督管理办公室","采购政策、采购方式与市场秩序管理"],
+               ["行政政法处 / 教科文处","归口部门预算审核与经费管理"],
+               ["人事处 / 机关党委","机构人事、工资与机关党群工作"]],
+        lower:["归口管理的预算单位","直属事业单位","下级对口部门","后勤 / 服务实体"]
+      },
+      finreg:{
+        func:["贯彻执行金融管理与监管政策，开展辖区行业管理与协调",
+              "组织金融统计、信息报送与风险监测相关工作",
+              "管理机关经费、财务核算与预算执行",
+              "承担调研、培训与会议等事务的组织保障",
+              "按职责开展政策传导与业务合规指导"],
+        inner:[["办公室","综合协调、文电会务、新闻与后勤保障"],
+               ["财务处 / 会计财务部门","机关经费、财务核算与资产管理"],
+               ["金融稳定 / 业务管理部门","行业监测、政策传导与业务协调"],
+               ["统计研究 / 调查统计部门","金融统计、数据报送与调研分析"],
+               ["科技 / 支付结算管理部门","支付体系与信息系统管理"],
+               ["人事处 / 纪检监察","人事工资、内部监督与合规管理"]],
+        lower:["派出机构 / 分支机构","直属事业单位","所属社团 / 学会 / 协会","后勤 / 服务实体"]
+      },
+      education:{
+        func:["组织实施教育教学、科研管理与人才培养工作",
+              "管理学籍、招生考试与收费项目",
+              "编制并执行部门预算，管理财政拨款与专项经费",
+              "负责基建修缮、设备采购与资产管理",
+              "承担教职工工资绩效与学生奖助资金发放"],
+        inner:[["党政办公室","综合协调、文电会务与对外联络"],
+               ["财务处","预算编制、收费归集、核算与账户管理"],
+               ["人事处","教职工薪酬、绩效与人事管理"],
+               ["学生工作处 / 资助管理中心","奖助学金评定与发放组织"],
+               ["后勤管理处 / 基建处","食堂后勤、校舍修缮与工程管理"],
+               ["资产管理处 / 招标采购中心","设备采购、资产登记与采购付款"],
+               ["审计处","经费使用与项目资金内部监督"]],
+        lower:["直属事业单位","后勤 / 服务实体","所属社团 / 学会 / 协会","归口管理的预算单位"]
+      },
+      health:{
+        func:["提供医疗、预防保健与公共卫生服务",
+              "组织门诊与住院收费结算、票据与日终对账",
+              "管理财政拨款、专项补助与专款核算",
+              "负责药品耗材、设备采购与基建修缮付款",
+              "承担人员工资、绩效与补助发放"],
+        inner:[["院办公室","综合协调、会务与对外联络"],
+               ["财务科 / 计财处","预算、收费结算、核算与账户管理"],
+               ["收费处 / 出入院管理处","收费窗口、票据与结算对账"],
+               ["人事科","薪酬绩效与人员经费口径"],
+               ["设备物资科 / 采购中心","药品耗材与设备采购、付款管理"],
+               ["总务后勤科 / 基建办","院区修缮、后勤与工程款项"],
+               ["审计科 / 纪检监察室","收费与采购的内部监督"]],
+        lower:["派出机构 / 分支机构","直属事业单位","后勤 / 服务实体","所属社团 / 学会 / 协会"]
+      },
+      civil:{
+        func:["组织社会救助、优抚安置与福利服务管理",
+              "管理就业服务、人才服务与人力资源公共服务",
+              "负责各类补贴、救助资金的批次发放与名单管理",
+              "管理机关经费、专项资金与专款核算",
+              "承担服务采购、设施维护与活动经费结算"],
+        inner:[["办公室","综合协调、文电会务与信访接待"],
+               ["规划财务处","预算编制、专项资金与账户管理"],
+               ["社会救助处 / 业务处室","救助对象认定与补贴发放组织"],
+               ["人事处 / 就业促进处","人员经费与就业服务事务"],
+               ["政策法规处 / 审批处","制度依据、行政审批与公开事项"],
+               ["机关党委 / 纪检监察","党群工作与内部监督"]],
+        lower:["直属事业单位","下级对口部门","归口管理的预算单位","所属社团 / 学会 / 协会"]
+      },
+      justice:{
+        func:["依法履行审判、检察、司法行政或公共安全职责",
+              "管理机关经费、预算执行与账务核算",
+              "按规定管理诉讼费、罚没及特定款项",
+              "负责装备购置、技术服务与采购付款",
+              "承担人员工资、津贴与补助发放"],
+        inner:[["办公室 / 政治部","综合协调、文电会务与队伍管理"],
+               ["司法行政装备处 / 行装处","经费、装备与资产管理"],
+               ["财务处 / 计财科","预算、核算、账户与款项管理"],
+               ["立案庭 / 诉讼服务部门","诉讼费收缴与款项归集事项"],
+               ["执行局 / 业务管理部门","特定款项管理规则与流程"],
+               ["审计 / 纪检监察部门","经费与款项管理的内部监督"]],
+        lower:["派出机构 / 分支机构","下级对口部门","直属事业单位","后勤 / 服务实体"]
+      },
+      build:{
+        func:["承担行业规划、项目建设与市场监管职责",
+              "管理项目资金拨付、专款核算与按进度支付",
+              "负责行政事业性收费收缴与归集",
+              "组织工程款、履约与质量保证金管理",
+              "承担设备采购、养护服务与人员经费支付"],
+        inner:[["办公室","综合协调、文电会务与后勤保障"],
+               ["计划财务处","预算、项目资金、账户与核算管理"],
+               ["规划 / 建设管理处","项目立项、进度与资金计划管理"],
+               ["工程管理 / 质量安全部门","工程款项支付节点与保证金事项"],
+               ["政策法规处 / 审批处","收费项目、审批与制度依据"],
+               ["人事处 / 审计处","人员经费与项目资金内部监督"]],
+        lower:["直属事业单位","派出机构 / 分支机构","下级对口部门","归口管理的预算单位"]
+      },
+      economy:{
+        func:["拟订并组织实施行业规划、产业政策与市场管理措施",
+              "管理机关经费、专项工作经费与预算执行",
+              "组织会议、展会、调研与培训活动的经费结算",
+              "负责设备与服务采购、项目资金支付",
+              "承担人员工资、补贴发放与统计分析"],
+        inner:[["办公室","综合协调、文电会务与督查"],
+               ["综合处 / 财务处","预算、专项经费与账户管理"],
+               ["规划 / 产业发展处","规划编制与专项工作组织"],
+               ["市场管理 / 行业管理处","行业管理与市场秩序事项"],
+               ["政策法规处 / 审批处","制度依据与行政审批"],
+               ["人事处 / 机关党委","人事工资与机关党群工作"]],
+        lower:["直属事业单位","下级对口部门","所属社团 / 学会 / 协会","归口管理的预算单位"]
+      },
+      group:{
+        func:["按章程组织会员服务、活动与交流",
+              "管理会费、活动经费与专项经费收支",
+              "负责基层组织资金归集与核算指导",
+              "承担会议、培训与活动费用结算",
+              "负责专职人员工资与劳务报酬发放"],
+        inner:[["办公室 / 秘书处","综合协调、文电会务与会员联络"],
+               ["财务部 / 经费审查委员会","会费、经费收支核算与账户管理"],
+               ["组织 / 基层工作部门","下属组织管理与资金归集口径"],
+               ["活动 / 宣传部门","会议培训与活动经费结算"],
+               ["权益 / 服务部门","会员服务与专项经费使用"],
+               ["经审 / 监督部门","经费使用的内部审查"]],
+        lower:["所属社团 / 学会 / 协会","下级对口部门","直属事业单位","后勤 / 服务实体"]
+      },
+      party:{
+        func:["承担综合协调、决策服务与机关运转保障",
+              "组织会议、调研与培训的事务及经费保障",
+              "管理机关经费、专项工作经费与预算执行",
+              "负责办公设备与服务采购付款",
+              "承担人员工资、补贴发放与内部管理"],
+        inner:[["办公厅（室）","综合协调、文电会务与督查落实"],
+               ["机关事务 / 行政财务部门","机关经费、账户与资产管理"],
+               ["综合 / 调研部门","专项工作组织与调研保障"],
+               ["人事 / 组织部门","人员经费与工资管理"],
+               ["政策法规 / 机要保密部门","制度依据与信息管理"],
+               ["机关党委 / 纪检监察","党群工作与内部监督"]],
+        lower:["归口管理的预算单位","直属事业单位","下级对口部门","后勤 / 服务实体"]
+      },
+      institution:{
+        func:["依法承担公共服务、事务管理与技术支持职责",
+              "管理财政拨款、服务性收费与经费收支",
+              "负责收费收缴、归集与缴库",
+              "承担设备与服务采购付款、专项资金核算",
+              "负责人员工资、绩效与劳务报酬发放"],
+        inner:[["办公室","综合协调、文电会务与对外联络"],
+               ["财务科（处）","预算、收费、核算与账户管理"],
+               ["业务科室","公共服务事项与业务归口管理"],
+               ["人事 / 综合科","人员经费与工资管理"],
+               ["采购 / 资产管理科","设备采购、资产登记与付款"],
+               ["审计 / 纪检监察","收费与经费内部监督"]],
+        lower:["派出机构 / 分支机构","直属事业单位","后勤 / 服务实体","归口管理的预算单位"]
+      },
+      generic:{
+        func:["依法履行公共管理或公共服务职责，具体以官方公布的机构职能为准",
+              "管理单位经费、预算执行与账务核算",
+              "承担收费、专项资金与采购付款事项",
+              "负责人员工资、补贴与劳务报酬发放",
+              "按主管部门规定办理账户、结算与信息报送"],
+        inner:[["办公室 / 综合部门","综合协调、文电会务与后勤保障"],
+               ["财务部门","预算、核算、账户与资金管理"],
+               ["人事部门","人员经费与工资管理"],
+               ["业务归口部门","具体业务事项与审批链条"],
+               ["采购 / 资产管理部门","采购付款与资产登记"],
+               ["审计 / 纪检监察","经费与业务的内部监督"]],
+        lower:["直属事业单位","下级对口部门","归口管理的预算单位","后勤 / 服务实体"]
+      }
+    };
+
+    function orgStruct(p){
+      var st=ORG_STRUCT[p.k]||ORG_STRUCT.generic;
+      return {
+        func:st.func||ORG_STRUCT.generic.func,
+        inner:st.inner||ORG_STRUCT.generic.inner,
+        lower:st.lower||ORG_STRUCT.generic.lower
+      };
+    }
+    function innerLink(duty){
+      if(/财务|预算|经费|会计|国库|资金|核算/.test(duty)) return "经费与账户事项的主归口部门，走访重点对接";
+      if(/收费|征收|非税|缴库/.test(duty)) return "收款结算、票据与对账安排的核实对象";
+      if(/采购|资产|工程|基建|装备|修缮/.test(duty)) return "采购付款、保证金与项目资金的核实对象";
+      if(/人事|工资|薪酬|绩效|离退休/.test(duty)) return "代发范围与人员经费发放口径的核实对象";
+      if(/办公室|综合|文秘|会务|后勤|秘书/.test(duty)) return "函件、会务与走访窗口的归口部门";
+      if(/审计|监督|纪检|法规|审批/.test(duty)) return "合规口径与制度依据的核实对象";
+      return "业务归口与审批链条的核实对象";
+    }
+    function superiorRows(lv){
+      var m={
+        province:{lead:"本级党委、政府组成部门序列（具体名称以机构编制文件为准）",
+                  guide:"国家层面对口主管部门按职责实施业务指导（名称待核实）",
+                  admin:"同级财政、机构编制、人力资源社会保障等部门按事项实施综合管理"},
+        city:{lead:"本级党委、政府组成部门序列（具体名称以机构编制文件为准）",
+              guide:"省级对口主管部门按职责实施业务指导（名称待核实）",
+              admin:"同级财政、机构编制、人力资源社会保障等部门按事项实施综合管理"},
+        county:{lead:"本级党委、政府组成部门序列（具体名称以机构编制文件为准）",
+                guide:"地市级对口主管部门按职责实施业务指导（名称待核实）",
+                admin:"同级财政、机构编制、人力资源社会保障等部门按事项实施综合管理"},
+        town:{lead:"本级党委、政府及上级派出管理机构（具体名称待核实）",
+              guide:"县区级对口部门按职责实施业务指导（名称待核实）",
+              admin:"县区级财政及相关部门按事项实施综合管理"},
+        unknown:{lead:"上级主管单位名称未识别，须以机构编制文件核实",
+                 guide:"业务指导关系未识别，须以主管部门公开文件核实",
+                 admin:"综合管理部门按事项确定，须逐项核实"}
+      };
+      var x=m[lv.k]||m.unknown;
+      return [
+        ["领导关系","按行政层级隶属本级党委、政府：" + x.lead,"核实领导分工、归口管理与重大事项报批路径"],
+        ["业务指导","接受上级对口部门业务指导："+x.guide,"核实业务指导事项范围与须报批 / 报备情形"],
+        ["综合管理",x.admin,"核实开户审批、资金存放、编制与人事等事项的管理部门"],
+        ["监督关系","接受纪检监察、审计等监督（依单位性质确定）","核实纪律要求与业务交流的合规边界"]
+      ];
+    }
+
+    // 第三章：单位治理与组织画像
+    function orgProfileSection(q,p){
+      var n=q.name||"机构", lv=orgLevel(n), st=orgStruct(p);
+      var B=[];
+
+      var leaderRows=LEADER_ROLES.map(function(r,i){
+        return [String(i+1),r.role,r.key?F(r.key):"—",r.focus,r.key?FS(r.key):"不涉及"];
+      });
+      B.push({sub:"（一）主要及相关负责人（职务口径 + 现场补录）",
+        intro:"为避免引用过期或未经核实的个人信息，本材料只列明该类单位通常涉及的负责人职务口径，姓名一律不预置；走访前按下列口径逐项核实并可在预览页「现场补录」中填写。",
+        table:{head:["序号","职务口径","姓名 / 名称","走访对接关注点","信息状态"],rows:leaderRows},
+        paras:["<b>核实依据：</b>以最新官方任免文件、单位官网「领导信息」栏目、政府信息公开平台的机构职能信息或正式函件为准；不得依据非公开渠道或既往印象填写。",
+               "<b>对接顺序：</b>先由总行公司金融部按正式渠道预约，经办公室（综合处）归口后，再与财务部门对接具体事项；不得越过归口部门直接联系个人。",
+               "<b>信息保护：</b>补录内容仅保存在当前页面内存，不上传、不持久化、不进入下载文件以外的任何渠道；不采集个人联系方式与身份信息。"]});
+
+      B.push({sub:"（二）主要职能（同类机构通行口径 · 研判）",
+        intro:"下列为「"+p.label+"」同类机构通常承担的主要职能，用于组织走访准备，须以该单位官方公布的机构职能与「三定」规定为准。",
+        list:st.func.map(function(x){return E(x);}),
+        paras:["本章职能描述与第四章业务场景均为研判内容，不代表该单位实际职责范围、业务规模或金融需求。"]});
+
+      B.push({sub:"（三）内设机构及职责分工（常见设置 · 研判）",
+        intro:"下表列示同类机构常见的内设机构及其通行职责，用于判断应接洽的归口部门；实际机构名称、数量与职责以该单位官方公布的内设机构清单为准。",
+        table:{head:["内设机构（常见设置）","主要职能（通行口径）","与机构业务的关联点"],
+               rows:st.inner.map(function(r){return [r[0],r[1],innerLink(r[1])];})},
+        paras:["<b>已核实内设机构（现场补录）：</b>"+E(F("innerOrg"))+"　|　<b>状态：</b>"+E(FS("innerOrg")),
+               "<b>核实要点：</b>财务（计划财务）部门通常为账户、结算与对账的主归口；办公室（综合处）为函件与会务归口；涉及收费、采购、人员经费的事项须分别确认对应处室及审批链条。"]});
+
+      B.push({sub:"（四）上级主管与业务指导单位（层级口径 · 研判）",
+        intro:"按录入名称研判行政层级为「"+lv.label+"」，据此列示一般的上级关系口径；具体单位名称、隶属关系与报批路径一律以机构编制文件为准。",
+        table:{head:["关系层级","一般口径（研判）","须核实事项"],rows:superiorRows(lv)},
+        paras:["<b>上级主管单位（现场补录）：</b>"+E(F("superior"))+"　|　<b>状态：</b>"+E(FS("superior")),
+               "<b>关键影响：</b>预算单位属性、开户审批链条、资金存放决策程序与竞争性选择安排，通常由上级主管部门及同级综合管理部门的规定确定，须在方案准备前完成核实。"]});
+
+      B.push({sub:"（五）下属及归口管理单位（类型口径 · 研判）",
+        intro:"下表列示该类机构通常存在的下属 / 归口管理单位类型，用于判断账户主体关系与资金归集范围；是否实际存在、数量与名称均须核实。",
+        table:{head:["单位类型","一般关系（研判）","核实要点"],
+               rows:st.lower.map(function(k){
+                 var h=LOWER_HINT[k]||["关系待核实","核实法人资格与账户主体"];
+                 return [k,h[0],h[1]];
+               })},
+        paras:["<b>下属 / 归口管理单位（现场补录）：</b>"+E(F("subordinate"))+"　|　<b>状态：</b>"+E(FS("subordinate")),
+               "<b>核实要点：</b>下属单位是否具备独立法人资格、是否单独核算、是否已分别开立账户，直接决定可否开展资金归集与统一对账，不得先行推定。"]});
+
+      B.push({sub:"（六）信息核实渠道与口径要求",
+        intro:"本章信息时效性强，走访前须按下列官方渠道逐项核对并留痕，核对结果回填本章与第九章核实清单。",
+        list:[
+          "单位官方网站「领导信息 / 领导之窗」「机构职能」「内设机构」栏目，以及政府信息公开平台的机构职能与「三定」规定。",
+          "机构编制部门公告、政府公报与人事任免文件，用于核实单位性质、行政层级、内设机构与负责人任免。",
+          "主管部门公开文件与正式函件，用于核实隶属关系、业务指导关系与归口管理部门。",
+          "年度部门预算 / 决算公开中的「单位构成」，用于核实下属及归口管理预算单位范围。",
+          "走访纪要与该单位办公室（综合处）确认的对接窗口，用于核实实际归口与审批链条。",
+          "涉及具体人员姓名与任免的，一律以最新官方公布为准；不得引用转载、汇编或非公开渠道信息。"
+        ],
+        paras:["<b>使用要求：</b>未完成核实前，不得将本章研判或补录内容作为事实对外引用；对外交流仅使用官方已公开且可核验的表述。"]});
+
+      return {t:"三、单位治理与组织画像（负责人 / 内设架构与职能 / 上级及下属单位）",
+        intro:"本章回应走访准备中最优先的基础信息需求：明确应接洽的主要及相关负责人职务口径、单位主要职能与内设架构职责分工、上级与下属管理单位的关系层级，并给出逐项核实渠道。",
+        flag:"本章除「查询工具输出」外均为同类机构通用研判；姓名、任免、内设机构与上下级单位具体名称一律不预置、不臆造，须经官方渠道核实或在预览页现场补录。",
+        blocks:B};
+    }
+    // ===== 业务合作参阅材料（详细版 · 2026-11-05 用户要求）=====
     // 编制规范固化自 fjhx-doc-pipeline：style-guide.md（品牌排版）、department-map.md（部门口径）、
     // report-template.html（五段式合作方向卡片）。主体为「机构业务研判 + 服务方案 + 走访组织」，
     // 地址、坐标与网点仅作为附录 A 的客观查询数据，不再作为材料主体。
+    // 2026-11-06：新增第三章「单位治理与组织画像」——负责人职务口径、内设架构与主要职能、
+    // 上级及下属管理单位，配合预览页「现场补录」与官方核实渠道，姓名等一律不预置。
     // 合规边界：仅使用查询可核验数据 + 同类机构通用业务场景（一律标注「研判 / 待核实」）；
     // 不臆造合作事实与机构详情、不写财务指标与成效预测、不写服务承诺与授信意向；
     // 「已核验」与「研判」「待落地」严格分节；通篇标注「行内参考 请勿外传」。
     var CN_NUM=["一","二","三","四","五","六","七","八"];
     var CIRC_NUM=["①","②","③","④","⑤"];
     var DEPT_LINE="总行公司金融部（牵头）；总行相关部门、属地经营机构（配合）";
-    var BRIEF_SHORT=["编制说明","属性研判","场景图谱","服务能力","合作方向","走访提纲","推进路径","核实清单","合规提示","附A 就近网点","附B 资料来源"];
+    var BRIEF_SHORT=["编制说明","属性研判","组织画像","场景图谱","服务能力","合作方向","走访提纲","推进路径","核实清单","合规提示","附A 就近网点","附B 资料来源"];
     function E(x){ return esc(x==null?"":String(x)); }
     function stripTags(s){ return String(s==null?"":s).replace(/<[^>]*>/g,""); }
 
@@ -725,7 +1101,7 @@
           ["编制单位","总行公司金融部"],
           ["使用对象","行内走访与业务对接人员（行内参考 请勿外传）"],
           ["编制依据","本次查询可核验的机构定位与网点公开信息；同类机构通用业务场景；行内机构业务通用服务类别"],
-          ["信息边界","未开展现场调研，未调取该单位登记资料、预算资料与财务资料；第三、五章为研判内容，非该单位事实"],
+          ["信息边界","未开展现场调研，未调取该单位登记资料、预算资料与财务资料；第三、四、六章含研判内容，非该单位事实"],
           ["材料性质","走访前参阅，不构成服务承诺、产品报价、授信意向或成效预测"]
         ]},
         paras:["全篇将信息分为<b>已核验</b>（查询工具输出）、<b>研判</b>（同类机构通用场景）、<b>待核实 / 待落地</b>（拟开展工作）三类，不得混用。"]});
@@ -743,15 +1119,17 @@
           ["现有合作基础","未核验。本材料不认定任何既有合作事实、已达成事项或服务关系"]
         ])},
         paras:["<b>研判依据：</b>依据录入名称中的关键词匹配同类机构通用业务场景，用于组织走访准备，不代表该单位的实际职责、业务规模或需求。",
-               "<b>使用要求：</b>对外交流前，须按第八章清单完成逐项核实；未完成核实的，不得将本章研判内容作为事实引用。"]});
+               "<b>使用要求：</b>对外交流前，须按第九章清单完成逐项核实；未完成核实的，不得将本章研判内容作为事实引用。"]});
 
-      S.push({t:"三、业务场景与金融服务需求图谱",
+      S.push(orgProfileSection(q,p));
+
+      S.push({t:"四、业务场景与金融服务需求图谱",
         intro:"下表列示「"+p.label+"」同类机构常见业务环节与可能涉及的金融服务，属通用研判，不代表该单位实际业务或实际需要。",
         table:{head:["业务环节","常见事项","可能涉及的金融服务","需核实事项"],rows:p.scenes},
         paras:["表中金融服务均为商业银行机构业务<b>通用类别</b>，是否适用须结合该单位主管部门规定、本行业务授权与产品准入条件逐项核实。",
                "本章不引用任何客户经营数据、财务数据或同业做法，不据此推定该单位存在资金存放、采购或系统对接需求。"]});
 
-      S.push({t:"四、机构业务服务能力（通用清单，须逐项核实）",
+      S.push({t:"五、机构业务服务能力（通用清单，须逐项核实）",
         intro:"以下为可对外介绍之前须逐项核实的通用服务类别，不含产品报价、资质承诺、授信意向或业务规模数据。",
         table:{head:["服务类别","服务内容（通用）","适用前提 / 需核实事项"],rows:[
           ["账户与结算","单位银行结算账户（基本、一般、专用、临时）开立与维护，支付结算、票据、对账单与电子回单、对公网银","依法成立并提供完整开户资料；通过客户身份识别与尽职调查；账户用途以开户审批为准"],
@@ -763,28 +1141,28 @@
         ]},
         paras:["服务渠道可依托本行公开网点目录所列营业网点（共 "+BRANCHES.length+" 家，官网公开信息，具体营业状态以官方公告为准）；具体承接安排由<b>总行公司金融部</b>统筹，属地经营机构按职责配合。"]});
 
-      S.push({t:"五、拟开展合作方向（待落地，非既有合作事实）",
-        intro:"基于第三、四章的通用研判，梳理四项可论证、可分步推进的工作方向；均为拟争取事项，须经核实与报审后方可开展。",
+      S.push({t:"六、拟开展合作方向（待落地，非既有合作事实）",
+        intro:"基于第四、五章的通用研判，梳理四项可论证、可分步推进的工作方向；均为拟争取事项，须经核实与报审后方可开展。",
         flag:"以下方向均为待落地事项，不代表已与该单位建立联系、达成意向或形成任何服务承诺。",
         cards:commonDirections(p),
         paras:["各方向按「对象需求 → 银行能力 → 具体合作 → 可行路径 → 建议对接」五段式列示；建议对接统一由<b>总行公司金融部</b>牵头，总行相关部门与属地经营机构配合，不在材料中回指具体网点作为对接主体。"]});
 
-      S.push({t:"六、走访沟通提纲",
+      S.push({t:"七、走访沟通提纲",
         intro:"以下为沟通顺序与要点，属行内提示；实际交流须使用官方商务语气，不承诺办理结果、不报价、不评价同业。",
         list:[
           "<b>开场与身份说明：</b>表明来访单位与人员，说明本次为常规业务交流，不涉及采购决策与结果承诺。",
           "<b>需求了解：</b>询问归口管理部门、现有账户与结算安排、年度重点工作对资金管理的要求，以听取为主，不预设需求。",
-          "<b>能力介绍：</b>仅介绍第四章已核实可开展的通用服务类别，不引用未核验数据、不作同业比较。",
+          "<b>能力介绍：</b>仅介绍第五章已核实可开展的通用服务类别，不引用未核验数据、不作同业比较。",
           "<b>合规确认：</b>明确开户、资金存放、代发等事项须按主管部门规定及本行制度履行审批、竞争性选择或协议签署程序。",
           "<b>后续安排：</b>约定资料清单核对与下一次对接方式，由总行公司金融部统一归口，属地经营机构配合承接。",
           "<b>按机构类型的补充提问：</b>"+E(p.talk)
         ],
         paras:["<b>沟通禁语：</b>不承诺开户或业务办理时限，不报价格与利率，不评价同业机构，不引用行内经营数据、客户信息或未公开资料。"]});
 
-      S.push({t:"七、推进路径与责任分工",
+      S.push({t:"八、推进路径与责任分工",
         intro:"按「先核实、再报审、后对接」的顺序组织，各阶段状态均为待启动，本材料不记载任何已落地事项。",
         table:{head:["阶段","主要动作","牵头","配合","输出物","状态"],rows:[
-          ["1 资料核实","核对机构全称、单位性质、预算单位属性与开户审批链条","总行公司金融部","属地经营机构","核实清单（第八章）","待启动"],
+          ["1 资料核实","核对机构全称、单位性质、预算单位属性与开户审批链条","总行公司金融部","属地经营机构","核实清单（第九章）","待启动"],
           ["2 制度比对","比对账户、资金存放、代发等业务的行内制度与监管要求","总行公司金融部","总行相关部门","适用条件清单","待启动"],
           ["3 方案准备","按核实结果形成服务方案与资料清单，履行内部报审","总行公司金融部","总行相关部门","服务方案（待报审）","待启动"],
           ["4 对接沟通","按第六章提纲开展走访，记录诉求与需补充资料","总行公司金融部","属地经营机构","走访纪要","待启动"],
@@ -806,15 +1184,15 @@
       var verifyRows=verifyBase.concat(p.verify).map(function(r,i){
         return [String(i+1),r[0],r[1],"总行公司金融部 / 属地经营机构","待核实"];
       });
-      S.push({t:"八、需进一步核实事项清单",
+      S.push({t:"九、需进一步核实事项清单",
         intro:"下列事项在走访前逐项核实并留痕；未完成核实前，不得进入方案报审与对外承诺环节。",
         table:{head:["序号","核实事项","建议核实渠道","责任方","状态"],rows:verifyRows},
-        paras:["核实结果应回填本清单并同步修订第二、三、五章；涉及客户资料的，按行内信息安全与保密要求管理。"]});
+        paras:["核实结果应回填本清单并同步修订第二、三、六章；涉及客户资料的，按行内信息安全与保密要求管理。"]});
 
-      S.push({t:"九、合规与风险提示",
+      S.push({t:"十、合规与风险提示",
         intro:"本章为强制性边界要求，适用于材料编制、走访交流与后续方案形成的全过程。",
         list:[
-          "<b>信息性质：</b>第二、三、五章含研判内容，未经现场核实不得作为事实对外引用。",
+          "<b>信息性质：</b>第二、三、四、六章含研判内容，未经现场核实不得作为事实对外引用。",
           "<b>已落地与待落地：</b>本材料未认定任何既有合作；所有方向均为待落地，表述须严格区分。",
           "<b>客户尽职调查：</b>账户开立及业务关系建立须按反洗钱与客户身份识别规定履行审核。",
           "<b>财政性资金：</b>涉及财政性资金存放的，须按主管部门规定履行竞争性选择或招投标程序，不得作任何形式的结果承诺。",
@@ -880,6 +1258,13 @@
       if(s.table) h+=renderTable(s.table);
       if(s.cards) h+=renderCards(s.cards);
       if(s.list) h+='<ol class="tight">'+s.list.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ol>';
+      (s.blocks||[]).forEach(function(b){
+        if(b.sub) h+='<h3 class="sub">'+E(b.sub)+'</h3>';
+        if(b.intro) h+='<p class="indent">'+E(b.intro)+'</p>';
+        (b.paras||[]).forEach(function(x){ h+="<p>"+x+"</p>"; });
+        if(b.table) h+=renderTable(b.table);
+        if(b.list) h+='<ol class="tight">'+b.list.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ol>';
+      });
       if(s.extra) h+=s.extra;
       return h;
     }
@@ -899,6 +1284,16 @@
         L.push("  可行路径："+c.path); L.push("  建议对接："+(c.dept||DEPT_LINE));
       });
       (s.list||[]).forEach(function(x,i){ L.push((i+1)+". "+stripTags(x)); });
+      (s.blocks||[]).forEach(function(b){
+        if(b.sub) L.push(b.sub);
+        if(b.intro) L.push(b.intro);
+        (b.paras||[]).forEach(function(x){ L.push(stripTags(x)); });
+        if(b.table) b.table.rows.forEach(function(r,i){
+          L.push(b.table.kv ? (r[0]+"："+r.slice(1).join("；")) :
+            ((i+1)+". "+r.map(function(c,j){return (b.table.head[j]||"")+"：" +c;}).join("　|　")));
+        });
+        (b.list||[]).forEach(function(x,i){ L.push((i+1)+". "+stripTags(x)); });
+      });
       (s.textExtra||[]).forEach(function(x){ L.push(x); });
       return L.join("\n");
     }
@@ -915,8 +1310,9 @@
         '　|　数据基准：官网公开网点目录（共 '+BRANCHES.length+' 家）　|　<span class="seal">行内参考 请勿外传</span></div>'+
         '</div>';
       var abstract='<div class="abstract"><b>内容提要</b>'+
-        '<p>本材料围绕「'+(q.name||"机构")+'」的机构业务拓展准备编制，共九章、两项附录。主体内容为机构属性研判、同类机构业务场景与金融服务需求图谱、'+
+        '<p>本材料围绕「'+(q.name||"机构")+'」的机构业务拓展准备编制，共十章、两项附录。主体内容为单位治理与组织画像（负责人、内设架构与职能、上级及下属单位）、机构属性研判、同类机构业务场景与金融服务需求图谱、'+
         '本行机构业务通用服务能力清单、四项拟开展合作方向（五段式）、走访沟通提纲、推进路径与责任分工、需核实事项清单及合规与风险提示；'+
+        '第三章组织画像采用「职务口径 + 通行架构 + 现场补录 + 核实渠道」方式列示，姓名与具体单位名称须经官方渠道核实；'+
         '地址、坐标与就近网点仅作为附录 A 的客观查询数据列示。</p>'+
         '<p><b>材料性质：</b>已核验信息与「研判 / 待落地」内容严格分节；不含财务指标、成效预测、服务承诺与授信意向。</p></div>';
       var toc='<div class="toc"><b>材料目录</b><br>'+ss.map(function(s){return E(s.t);}).join("<br>")+'</div>';
@@ -933,7 +1329,7 @@
       L.push("福建海峡银行 · 总行公司金融部　|　编制日期："+todayStr()+"　|　行内参考 请勿外传");
       L.push("机构类别研判："+p.label);
       L.push("");
-      L.push("【内容提要】本材料共九章、两项附录，主体为机构业务研判、服务需求图谱、服务能力清单、拟开展合作方向、走访提纲、推进路径、核实清单与合规提示；地址、坐标与就近网点仅列于附录 A。已核验与「研判 / 待落地」严格分节，不含财务指标、成效预测、服务承诺与授信意向。");
+      L.push("【内容提要】本材料共十章、两项附录，主体为单位治理与组织画像、机构属性研判、服务需求图谱、服务能力清单、拟开展合作方向、走访提纲、推进路径、核实清单与合规提示；姓名与具体上下级单位须经官方渠道核实或现场补录；地址、坐标与就近网点仅列于附录 A。已核验与「研判 / 待落地」严格分节，不含财务指标、成效预测、服务承诺与授信意向。");
       L.push("");
       L.push("【材料目录】");
       briefOutline(q).forEach(function(t){ L.push(t); });
@@ -948,7 +1344,7 @@
       if(!lastQuery){ briefBar.style.display="none"; briefActions.style.display="none"; return; }
       var p=orgProfile(lastQuery.name);
       briefBar.style.display="flex"; briefActions.style.display="flex";
-      briefDesc.textContent="已按行内体例生成详细材料（9 章 + 2 附录）：机构属性研判、业务场景需求图谱、服务能力清单、4 项拟开展合作方向、走访提纲、推进路径、核实清单与合规提示；地址与就近网点仅列于附录 A。";
+      briefDesc.textContent="已按行内体例生成详细材料（10 章 + 2 附录）：单位治理与组织画像（负责人职务口径、内设架构与职能、上级及下属单位）、业务场景需求图谱、服务能力清单、4 项拟开展合作方向、走访提纲、推进路径、核实清单与合规提示；支持全屏浏览与现场补录；地址与就近网点仅列于附录 A。";
       var tocEl=$("briefToc");
       if(tocEl) tocEl.textContent="共 "+BRIEF_SHORT.length+" 节 · "+BRIEF_SHORT.join(" / ")+"　|　类别研判："+p.label;
       briefPreview.innerHTML=briefFragment(lastQuery);   // 查询成功即连带生成全文
@@ -1144,6 +1540,7 @@
       resultActions.style.display="none";
       lastQuery=null;
       briefBar.style.display="none"; briefActions.style.display="none";
+      exitBriefFs(); resetBriefFields(); clearFillInputs();
       briefMask.classList.remove("show"); briefPreview.innerHTML="";
       resultTip.className="tip";
       resultTip.textContent="请输入机构名称后点击「查询」。";
@@ -1151,10 +1548,58 @@
       toast("已清空，可重新录入");
     });
 
+    // —— 全文全屏浏览：优先浏览器全屏 API，微信内置浏览器不支持时回退为视口铺满 ——
+    function isBriefFs(){ return briefMask.classList.contains("fs-pad"); }
+    function syncFsBtn(){ if(fullscreenBrief) fullscreenBrief.textContent=isBriefFs()?"退出全屏":"⛶ 全屏"; }
+    function enterBriefFs(){
+      briefMask.classList.add("fs-pad"); briefSheet.classList.add("fs");
+      document.body.classList.add("fs-lock"); syncFsBtn();
+      try{
+        var el=document.documentElement;
+        if(el.requestFullscreen){ var pr=el.requestFullscreen(); if(pr&&pr.catch) pr.catch(function(){}); }
+        else if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); }
+      }catch(e){}
+    }
+    function exitBriefFs(){
+      briefMask.classList.remove("fs-pad"); briefSheet.classList.remove("fs");
+      document.body.classList.remove("fs-lock"); syncFsBtn();
+      try{
+        if(document.fullscreenElement||document.webkitFullscreenElement){
+          var fn=document.exitFullscreen||document.webkitExitFullscreen;
+          if(fn) fn.call(document);
+        }
+      }catch(e){}
+    }
+    function rerenderBrief(){
+      if(!lastQuery) return;
+      var top=briefPreview.scrollTop;
+      briefPreview.innerHTML=briefFragment(lastQuery);
+      briefPreview.scrollTop=top;
+    }
+
+    // —— 现场补录：负责人 / 上级及下属单位，仅内存，不持久化 ——
+    var FILL_MAP={fillLeader:"leader",fillFinanceLeader:"financeLeader",fillContact:"contact",
+                  fillOtherLeader:"otherLeader",fillSuperior:"superior",
+                  fillInnerOrg:"innerOrg",fillSubordinate:"subordinate"};
+    function clearFillInputs(){
+      Object.keys(FILL_MAP).forEach(function(id){ var el=$(id); if(el) el.value=""; });
+    }
+    Object.keys(FILL_MAP).forEach(function(id){
+      var el=$(id); if(!el) return;
+      el.addEventListener("input",function(){
+        setBriefField(FILL_MAP[id],el.value);
+        rerenderBrief();
+      });
+    });
+    if(fillResetBtn) fillResetBtn.addEventListener("click",function(){
+      resetBriefFields(); clearFillInputs(); rerenderBrief(); toast("补录内容已清空");
+    });
+
     // —— 参阅材料交互 ——
     viewBrief.addEventListener("click",function(){
       if(!lastQuery){ toast("请先查询机构"); return; }
       briefPreview.innerHTML=briefFragment(lastQuery);
+      briefPreview.scrollTop=0;
       briefMask.classList.add("show");
     });
     downloadBrief.addEventListener("click",downloadBriefFile);
@@ -1165,8 +1610,20 @@
         navigator.clipboard.writeText(t).then(function(){toast("全文已复制");},function(){fallbackCopy(t);toast("全文已复制");});
       } else { fallbackCopy(t); toast("全文已复制"); }
     });
-    closeBriefBtn.addEventListener("click",function(){ briefMask.classList.remove("show"); });
-    briefMask.addEventListener("click",function(e){ if(e.target===briefMask) briefMask.classList.remove("show"); });
+    if(fullscreenBrief) fullscreenBrief.addEventListener("click",function(){
+      if(isBriefFs()) exitBriefFs(); else enterBriefFs();
+    });
+    function closeBriefSheet(){ exitBriefFs(); briefMask.classList.remove("show"); }
+    closeBriefBtn.addEventListener("click",closeBriefSheet);
+    briefMask.addEventListener("click",function(e){ if(e.target===briefMask) closeBriefSheet(); });
+    ["fullscreenchange","webkitfullscreenchange"].forEach(function(ev){
+      document.addEventListener(ev,function(){
+        if(isBriefFs() && !(document.fullscreenElement||document.webkitFullscreenElement)) exitBriefFs();
+      });
+    });
+    document.addEventListener("keydown",function(e){
+      if((e.key==="Escape"||e.keyCode===27) && isBriefFs()) exitBriefFs();
+    });
 
     // —— 高级设置折叠（仅保留可选的后端代理；定位凭据已内置且不可见） ——
     if(BACKEND_URL) backendUrlInput.value=BACKEND_URL;
