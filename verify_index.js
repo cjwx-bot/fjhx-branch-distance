@@ -1,5 +1,5 @@
 // 校验生成的 index.html：内联脚本语法 / 最近网点复算 / 参阅材料实跑 /
-// 技能全网检索资料库命中与未命中双路径 / 零 API 授权 / 公开级信息分级
+// 技能全网检索资料库命中与未命中双路径 / 前端零 Key 与三级定位降级 / 公开级信息分级
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -72,7 +72,7 @@ for(const [txt,expect] of cases){
 }
 
 // 3b) 资料库真实坐标路径：按命中机构坐标复算最近网点
-console.log('\n资料库真实坐标测距复算（零 API 授权）：');
+console.log('\n资料库真实坐标测距复算（前端零 Key）：');
 let geoOk = true;
 for (const o of (INTEL.orgs||[])) {
   const n = nearest({lat:o.geo.lat, lng:o.geo.lng});
@@ -177,8 +177,8 @@ Object.keys(pageChecks).forEach(k => { console.log('  ' + k + ':', pageChecks[k]
 console.log('  补充校验:', extraOk ? '通过' : '失败');
 if(!extraOk) process.exitCode = 1;
 
-// 6) 两阶段编制 + 零 API 授权 + 技能资料库命中/未命中双路径
-console.log('\n两阶段编制与零 API 授权：');
+// 6) 两阶段编制 + 前端零 Key + 三级定位降级 + 技能资料库命中/未命中双路径
+console.log('\n两阶段编制与前端零 Key：');
 let stageOk = true;
 const stageChecks = {
   '进度层弹窗': html.indexOf('id="progMask"') >= 0 && html.indexOf('class="mask mask--prog"') >= 0,
@@ -186,7 +186,7 @@ const stageChecks = {
   '阶段清单容器': html.indexOf('id="progStages"') >= 0,
   '五个真实阶段': html.indexOf('var BRIEF_STAGES=') >= 0 &&
                   (html.match(/\{t:"[^"]+", d:"[^"]+", pct:/g)||[]).length === 5,
-  '阶段②为资料库匹配': html.indexOf('匹配技能全网检索核验资料库') >= 0,
+  '阶段②为定位基准与资料库匹配': html.indexOf('调取定位基准与技能全网检索核验资料库') >= 0,
   '资料库查找与渲染函数': ['function lookupIntel(', 'function intelProfileSection(',
                         'function intelEvidenceHtml(', 'function intelMissingHtml('].every(x => html.indexOf(x) >= 0),
   '流水线与取消': html.indexOf('function runBriefPipeline(') >= 0 &&
@@ -196,13 +196,18 @@ const stageChecks = {
                 html.indexOf('id="briefPill"') >= 0,
   '查询阶段不预生成全文': html.indexOf('briefPreview.innerHTML="";   // 两阶段') >= 0,
   '完成后弹出全文': html.indexOf('briefMask.classList.add("show")') >= 0,
-  '零 API 授权声明': html.indexOf('零 API 授权') >= 0 && html.indexOf('不发起外部网络请求') >= 0,
+  '前端零 Key 声明': html.indexOf('前端零 Key') >= 0,
+  '旧零授权口径已清除': html.indexOf('零 API 授权') < 0,
+  '三级定位降级说明': html.indexOf('定位共三级') >= 0,
+  '同源后端定位入口': html.indexOf('fetch("api/geo?name="') >= 0 && html.indexOf('function applyGeoResult(') >= 0,
+  '降级原因如实标注': html.indexOf('function geoReason(') >= 0 && html.indexOf('已回退离线定位') >= 0,
+  '刷新作废未完成请求': html.indexOf('geoToken++') >= 0,
   '无地图接口残留': html.indexOf('apis.map.qq.com') < 0 &&
                     html.indexOf('function placeVerify(') < 0 &&
                     html.indexOf('String.fromCharCode') < 0 &&
                     html.indexOf('MAP_KEY') < 0 &&
                     html.indexOf('jsonp(') < 0,
-  '无明文地图 Key': !/I7GBZ-[A-Z0-9-]{20,}/.test(html),
+  '无明文地图 Key': !/[A-Z0-9]{5}(?:-[A-Z0-9]{5}){5}/.test(html),
   '资料库已内联': html.indexOf('window.ORG_INTEL =') >= 0,
   '如实收录状态': html.indexOf('资料库未收录') >= 0 && html.indexOf('全网检索补齐') >= 0,
   '旧一键生成已移除': html.indexOf('briefPreview.innerHTML=briefFragment(lastQuery);\n      briefPreview.scrollTop=0;\n      briefMask.classList.add("show")') < 0
@@ -286,3 +291,41 @@ try {
 } catch(e){ console.log('  分级校验异常:', e.message); gradeOk = false; }
 console.log('  分级校验:', gradeOk ? '通过' : '失败');
 if(!gradeOk) process.exitCode = 1;
+
+
+// 8) 三级定位降级：posText / geoRows / 参阅材料的实时定位字段
+console.log('\n三级定位降级与实时定位材料：');
+let geoPathOk = true;
+try {
+  const qGeo = {name:'福州市鼓楼区教育局', mode:'geo',
+    region:{province:'福建省',city:'福州市',district:'鼓楼区'},
+    geo:{title:'福州市鼓楼区教育局',address:'福州市鼓楼区某路1号',lat:26.0912,lng:119.2981,
+         source:'tencent-place-suggestion',provider:'腾讯位置服务（WebServiceAPI）',verifiedAt:'2026-11-07'},
+    intel:null, items:demoItems, geoNote:''};
+  bx.lastQuery = qGeo;
+  const gf = vm.runInContext('briefFragment(lastQuery)', bx);
+  const gt = vm.runInContext('briefText(lastQuery)', bx);
+  const gtPos = vm.runInContext('posText(lastQuery)', bx);
+  bx.lastQuery = {name:'某未收录单位', mode:'approx', region:qGeo.region, geo:null, intel:null,
+                  items:demoItems, geoNote:'实时定位服务不可用（HTTP-404），已回退离线定位'};
+  const af = vm.runInContext('briefFragment(lastQuery)', bx);
+  const apos = vm.runInContext('posText(lastQuery)', bx);
+  const geoChecks = {
+    '实时定位口径含 GCJ-02': gtPos.indexOf('实时真实坐标') >= 0 && gtPos.indexOf('GCJ-02') >= 0,
+    '材料写入实时定位坐标': gf.indexOf('26.0912') >= 0 && gf.indexOf('119.2981') >= 0,
+    '材料写入定位来源与时点': gf.indexOf('实时定位来源') >= 0 && gf.indexOf('2026-11-07') >= 0,
+    '材料声明密钥仅服务端持有': gf.indexOf('密钥仅由服务端环境变量持有') >= 0,
+    '纯文本同步定位字段': gt.indexOf('实时定位经纬度') >= 0,
+    '降级口径含具体原因': apos.indexOf('行政区划中心近似') >= 0 && apos.indexOf('已回退离线定位') >= 0,
+    '降级材料标注原因': af.indexOf('实时定位服务不可用') >= 0,
+    '降级材料不冒充核验': af.indexOf('资料库收录状态与补齐路径') >= 0,
+    '两种路径材料不同': gf !== af,
+    '无异常值': ['undefined','NaN','[object Object]'].every(k => gf.indexOf(k) < 0 && af.indexOf(k) < 0)
+  };
+  Object.keys(geoChecks).forEach(k => {
+    console.log('  ' + k + ':', geoChecks[k] ? '通过' : '失败');
+    if(!geoChecks[k]) geoPathOk = false;
+  });
+} catch(e){ console.log('  三级定位实跑异常:', e.message); geoPathOk = false; }
+console.log('  三级定位校验:', geoPathOk ? '通过' : '失败');
+if(!geoPathOk) process.exitCode = 1;
