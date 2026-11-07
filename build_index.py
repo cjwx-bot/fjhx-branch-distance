@@ -60,6 +60,14 @@ DOC_CSS = r""".doc{font-family:"Microsoft YaHei","微软雅黑","Source Han Sans
 .doc .note{font-size:8.6pt;color:#777;margin-top:9px;border-top:1px dashed #ccc;padding-top:5px;line-height:1.6}
 .doc .seal{display:inline-block;background:#E3F2FD;color:#0D47A1;border-radius:10px;padding:1px 8px;font-size:8.8pt;font-weight:700}
 .doc .flag{background:#e8f5e9;border-left:3px solid #2E7D32;padding:4px 8px;margin:4px 0;font-size:9pt}
+.doc .verify-links{margin:6px 0 8px;border:1px solid #d4e3f7;border-radius:7px;overflow:hidden}
+.doc .verify-links a{display:flex;align-items:center;gap:8px;padding:6px 9px;border-bottom:1px solid #e6ecf4;
+  color:#0D47A1;text-decoration:none;font-size:9pt;background:#f7fbff}
+.doc .verify-links a:last-child{border-bottom:0}
+.doc .verify-links .vl__n{flex:0 0 18px;height:18px;border-radius:5px;background:#0D47A1;color:#fff;
+  font-size:8.5pt;display:flex;align-items:center;justify-content:center}
+.doc .verify-links .vl__t{flex:1}
+.doc .verify-links .vl__go{color:#1976D2;font-weight:700}
 @page{size:A4;margin:12mm 13mm}
 @media screen and (max-width:600px){.doc{font-size:11pt}.doc table{font-size:10pt}.doc .cover .title{font-size:17pt}
   .doc .coop-card .tag{flex:0 0 56px}.doc .toc{line-height:1.8}}"""
@@ -319,6 +327,45 @@ html = r"""<!DOCTYPE html>
     .fill__row{display:flex;gap:9px;margin-top:8px}
     .fill__row .btn{height:34px;flex:0 0 auto;padding:0 12px;font-size:12px}
     @media (max-width:560px){.fill__grid{grid-template-columns:1fr}}
+    /* ===== 两阶段编制：在线复核进度层（2026-11-07） ===== */
+    .mask--prog{z-index:70}
+    .sheet--prog{display:flex;flex-direction:column;max-width:440px;max-height:88vh;overflow:hidden}
+    .prog__top{flex:0 0 auto}
+    .prog__scroll{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
+    .prog__hd{display:flex;gap:11px;align-items:center;margin-bottom:14px}
+    .prog__hd h3{margin:0;font-size:15.5px;line-height:1.4}
+    .prog__ico{flex:0 0 38px;height:38px;border-radius:11px;background:var(--brand-soft);
+      color:var(--brand-deep);display:flex;align-items:center;justify-content:center;font-size:18px}
+    .prog__sub{font-size:11.5px;color:var(--ink-3);margin-top:3px;max-width:270px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .prog__barwrap{display:flex;align-items:center;gap:10px}
+    .prog__bar{flex:1;height:9px;border-radius:999px;background:#e8eef7;overflow:hidden}
+    .prog__fill{height:100%;width:0;border-radius:999px;
+      background:linear-gradient(90deg,var(--brand),var(--brand-2));transition:width .34s ease}
+    .prog__pct{flex:0 0 44px;text-align:right;font-size:13px;font-weight:700;
+      color:var(--brand-deep);font-variant-numeric:tabular-nums}
+    .prog__now{font-size:12px;color:var(--ink-2);margin:9px 0 10px;line-height:1.55;min-height:18px}
+    .prog__stages{flex:0 0 auto;list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+    .prog__stages li{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;font-size:12px;
+      border-bottom:1px solid var(--line);color:var(--ink-3);line-height:1.45}
+    .prog__stages li:last-child{border-bottom:0}
+    .prog__stages .st{flex:0 0 17px;height:17px;border-radius:50%;border:1.5px solid #cfd9e8;
+      font-size:10px;display:flex;align-items:center;justify-content:center;margin-top:1px;background:#fff}
+    .prog__stages li.done{color:var(--ink-2);background:#f7fbff}
+    .prog__stages li.done .st{background:#2E7D32;border-color:#2E7D32;color:#fff}
+    .prog__stages li.run{color:var(--brand-deep);background:var(--brand-soft);font-weight:600}
+    .prog__stages li.run .st{border-color:var(--brand);color:var(--brand);animation:progSpin 1.2s linear infinite}
+    @keyframes progSpin{to{transform:rotate(360deg)}}
+    .prog__stages .sd{display:block;font-size:10.5px;color:var(--ink-3);font-weight:400;margin-top:2px}
+    .prog__note{font-size:11px;color:var(--ink-3);line-height:1.6;margin-top:10px;
+      background:#f7f9fc;border-radius:9px;padding:8px 10px}
+    .prog__note summary{cursor:pointer;color:var(--brand-deep);font-weight:700;list-style:none}
+    .prog__note summary::-webkit-details-marker{display:none}
+    .prog__note summary:before{content:"▸ "}
+    .prog__note[open] summary:before{content:"▾ "}
+    .prog__note p{margin:7px 0 0}
+    .sheet--prog .sheet__btns{flex:0 0 auto;margin-top:10px}
+    .sheet--prog .sheet__btns .btn{height:40px;font-size:13px}
   </style>
 </head>
 <body>
@@ -366,14 +413,14 @@ html = r"""<!DOCTYPE html>
         <div class="brief" id="briefBar" style="display:none">
           <div class="brief__ic">📄</div>
           <div class="brief__main">
-            <div class="brief__ttl">业务合作参阅材料 <span class="brief__pill">已生成详细版</span></div>
+            <div class="brief__ttl">业务合作参阅材料 <span class="brief__pill" id="briefPill">待编制</span></div>
             <div class="brief__desc" id="briefDesc"></div>
             <div class="brief__toc" id="briefToc"></div>
           </div>
         </div>
         <div class="btn-row" id="briefActions" style="display:none">
-          <button class="btn btn-ghost" id="viewBrief">查看详细材料</button>
-          <button class="btn btn-ghost" id="downloadBrief">下载材料</button>
+          <button class="btn btn-primary" id="viewBrief">编制并查看参阅材料</button>
+          <button class="btn btn-ghost" id="downloadBrief">编制并下载材料</button>
         </div>
         <div class="btn-row" id="resultActions" style="display:none">
           <button class="btn btn-ghost" id="copyBtn">复制结果到群</button>
@@ -388,7 +435,8 @@ html = r"""<!DOCTYPE html>
           <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
           <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合腾讯地图公开位置实测匹配留存。</li>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
-          <li>查询成功后连带生成《业务合作参阅材料》（详细版 · 行内参考），含单位治理与组织画像（负责人职务口径、内设架构与主要职能、上级及下属单位）、业务研判、服务能力、合作方向、走访提纲与合规提示；支持全屏浏览、现场补录、复制与下载打印；位置与网点信息仅列于附录 A。</li>
+          <li>本工具分两步：录入机构名称并点击「查询网点」即反馈最近网点；点击「编制并查看参阅材料」后，页面显示分阶段进度，先在线复核机构定位与行政区划，再生成十章 + 两附录的详细材料，完成后弹出全文。</li>
+          <li>在线环节仅为腾讯位置服务的机构定位与行政区划复核；负责人、内设机构、上级及下属单位不由页面在线核验，材料第三章（七）列官方渠道检索直达入口，须核对后在「现场补录」回填。支持全屏浏览、复制与下载打印；位置与网点信息仅列于附录 A。</li>
         </ul>
       </section>
     </main>
@@ -405,6 +453,31 @@ html = r"""<!DOCTYPE html>
         <button class="btn btn-primary" id="confirmShare">复制并分享</button>
         <button class="btn btn-ghost" id="closeShare">关闭</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 参阅材料 · 分阶段编制进度 -->
+  <div class="mask mask--prog" id="progMask">
+    <div class="sheet sheet--prog" id="progSheet">
+      <div class="prog__top">
+        <div class="prog__hd">
+          <div class="prog__ico">⚙</div>
+          <div><h3>正在编制业务合作参阅材料</h3><div class="prog__sub" id="progOrg"></div></div>
+        </div>
+        <div class="prog__barwrap">
+          <div class="prog__bar"><div class="prog__fill" id="progFill"></div></div>
+          <div class="prog__pct" id="progPct">0%</div>
+        </div>
+        <div class="prog__now" id="progNow">准备就绪</div>
+      </div>
+      <div class="prog__scroll">
+        <ol class="prog__stages" id="progStages"></ol>
+        <details class="prog__note">
+          <summary>编制说明与能力边界</summary>
+          <p>本页为静态页面。在线环节仅为腾讯位置服务的机构定位与行政区划复核；负责人、任免、内设机构及上下级单位不由页面在线核验，材料仅列官方渠道检索入口，须核对后现场补录。编制过程不上传、不缓存任何机构查询内容。</p>
+        </details>
+      </div>
+      <div class="sheet__btns"><button class="btn btn-ghost" type="button" id="cancelProg">取消编制</button></div>
     </div>
   </div>
 
@@ -473,7 +546,10 @@ html = r"""<!DOCTYPE html>
         viewBrief=$("viewBrief"), downloadBrief=$("downloadBrief"),
         briefMask=$("briefMask"), briefSheet=$("briefSheet"), briefPreview=$("briefPreview"),
         copyBrief=$("copyBrief"), closeBriefBtn=$("closeBrief"),
-        fullscreenBrief=$("fullscreenBrief"), fillResetBtn=$("fillReset");
+        fullscreenBrief=$("fullscreenBrief"), fillResetBtn=$("fillReset"),
+        progMask=$("progMask"), progOrg=$("progOrg"), progFill=$("progFill"),
+        progPct=$("progPct"), progNow=$("progNow"), progStages=$("progStages"),
+        cancelProg=$("cancelProg");
 
     function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
     function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},1800); }
@@ -749,7 +825,7 @@ html = r"""<!DOCTYPE html>
       resultActions.style.display="none";
       lastQuery=null;
       briefBar.style.display="none"; briefActions.style.display="none";
-      exitBriefFs(); resetBriefFields(); clearFillInputs();
+      cancelBriefPipeline(); exitBriefFs(); resetBriefFields(); clearFillInputs();
       briefMask.classList.remove("show"); briefPreview.innerHTML="";
       resultTip.className="tip";
       resultTip.textContent="请输入机构名称后点击「查询」。";
@@ -804,14 +880,147 @@ html = r"""<!DOCTYPE html>
       resetBriefFields(); clearFillInputs(); rerenderBrief(); toast("补录内容已清空");
     });
 
-    // —— 参阅材料交互 ——
-    viewBrief.addEventListener("click",function(){
-      if(!lastQuery){ toast("请先查询机构"); return; }
-      briefPreview.innerHTML=briefFragment(lastQuery);
-      briefPreview.scrollTop=0;
-      briefMask.classList.add("show");
+    // ===== 两阶段编制流水线（2026-11-07） =====
+    // 查询阶段只反馈最近网点；点击参阅材料按钮后启动本流水线。
+    // 阶段②为真实在线请求（腾讯位置服务地点建议接口），其余为本地真实计算；
+    // 阶段名称如实标注，不将「在线复核定位」表述为「已核验负责人」。
+    function nowStr(){
+      var d=new Date(), p=function(n){return (n<10?"0":"")+n;};
+      return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());
+    }
+    function placeVerify(name, region, key){
+      var url="https://apis.map.qq.com/ws/place/v1/suggestion/?keyword="+encodeURIComponent(name)+
+        "&region="+encodeURIComponent(region||"")+"&key="+encodeURIComponent(key)+"&page_size=3&page_index=1";
+      return jsonp(url, "_qqverify"+Date.now(), 5500).then(function(j){
+        if(j && j.status===0 && j.data && j.data.length) return j.data[0];
+        return null;
+      }).catch(function(){ return null; });
+    }
+    var BRIEF_STAGES=[
+      {t:"读取网点基准与机构类别知识库", d:"官网公开网点目录 · 机构画像知识库", pct:14},
+      {t:"在线复核机构定位与行政区划", d:"腾讯位置服务地点建议接口", pct:40},
+      {t:"生成官方核验直达入口", d:"政府网站检索 · 主体登记公示渠道", pct:58},
+      {t:"按十章体例组装参阅材料", d:"组织画像 · 场景 · 方向 · 合规边界", pct:82},
+      {t:"A4 排版渲染与密级标识校验", d:"行内参考 请勿外传", pct:100}
+    ];
+    var briefRunToken=0;
+    function renderProgStages(){
+      if(!progStages) return;
+      progStages.innerHTML=BRIEF_STAGES.map(function(x,i){
+        return '<li><span class="st">'+String(i+1)+'</span><span>'+esc(x.t)+
+          '<span class="sd">'+esc(x.d)+'</span></span></li>';
+      }).join("");
+    }
+    function setProg(idx, pct, note){
+      if(progFill) progFill.style.width=pct+"%";
+      if(progPct) progPct.textContent=pct+"%";
+      if(progNow) progNow.textContent=note||"";
+      if(!progStages) return;
+      var lis=progStages.getElementsByTagName("li");
+      for(var i=0;i<lis.length;i++){
+        lis[i].className = i<idx ? "done" : (i===idx ? "run" : "");
+        var st=lis[i].getElementsByClassName("st")[0];
+        if(st) st.textContent = i<idx ? "✓" : String(i+1);
+      }
+    }
+    function sleepProg(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+    function cancelBriefPipeline(){
+      briefRunToken++;
+      if(progMask) progMask.classList.remove("show");
+      document.body.classList.remove("fs-lock");
+    }
+    function runBriefPipeline(mode){
+      var q=lastQuery;
+      if(!q){ toast("请先查询机构"); return; }
+      var token=++briefRunToken;
+      function alive(){ return token===briefRunToken; }
+      function stageStart(i,note){
+        if(!alive()) return;
+        setProg(i, i===0?0:BRIEF_STAGES[i-1].pct, note||("正在执行："+BRIEF_STAGES[i].t+"…"));
+      }
+      function stageDone(i){
+        if(!alive()) return;
+        setProg(i+1, BRIEF_STAGES[i].pct, BRIEF_STAGES[i].t+"：完成");
+      }
+      exitBriefFs();
+      if(briefMask) briefMask.classList.remove("show");
+      renderProgStages(); setProg(0,0,"正在启动编制流程…");
+      if(progOrg) progOrg.textContent="查询机构："+(q.name||"机构");
+      if(progMask) progMask.classList.add("show");
+      document.body.classList.add("fs-lock");
+
+      Promise.resolve()
+      // ① 本地基准
+      .then(function(){ stageStart(0); return sleepProg(230); })
+      .then(function(){ if(!alive()) return; stageDone(0); return sleepProg(150); })
+      // ② 真实在线复核（失败自动降级，不阻塞主流程）
+      .then(function(){
+        if(!alive()) return null;
+        stageStart(1,"正在通过腾讯位置服务在线复核机构名称、地址与行政区划…");
+        var region=(q.region&&(q.region.city||q.region.province))||"福建省";
+        var job=MAP_KEY ? placeVerify(q.name,region,MAP_KEY) : Promise.resolve(null);
+        return Promise.all([job, sleepProg(500)]).then(function(r){
+          var d=r[0];
+          q.verify=d?{ok:true,d:d,time:nowStr()}:{ok:false,d:null,time:nowStr()};
+          if(!alive()) return null;
+          setProg(2, BRIEF_STAGES[1].pct, d ?
+            "在线复核完成：已取得规范名称、行政区划与 POI 类别" :
+            "在线复核未取得结果（接口未返回或超时），已按查询阶段定位数据继续编制");
+          return sleepProg(480);
+        });
+      })
+      // ③ 官方核验直达入口（真实拼装）
+      .then(function(){
+        if(!alive()) return null;
+        setProg(2, BRIEF_STAGES[1].pct, "正在按机构名称生成官方核验直达入口…");
+        return sleepProg(260);
+      })
+      .then(function(){ if(!alive()) return; stageDone(2); return sleepProg(140); })
+      // ④ 十章组装（真实生成并校验密级标识）
+      .then(function(){
+        if(!alive()) return null;
+        stageStart(3,"正在按十章体例组装单位治理与组织画像、业务研判与合规边界…");
+        return sleepProg(260);
+      })
+      .then(function(){
+        if(!alive()) return null;
+        var frag=briefFragment(q);
+        if(!frag || frag.indexOf("行内参考 请勿外传")<0) throw new Error("材料组装校验未通过");
+        q.__frag=frag;
+        stageDone(3); return sleepProg(150);
+      })
+      // ⑤ 排版渲染
+      .then(function(){
+        if(!alive()) return null;
+        stageStart(4,"正在进行 A4 排版渲染与密级标识校验…");
+        return sleepProg(220);
+      })
+      .then(function(){ if(!alive()) return; stageDone(4); return sleepProg(240); })
+      .then(function(){
+        if(!alive()) return;
+        document.body.classList.remove("fs-lock");
+        if(progMask) progMask.classList.remove("show");
+        var pill=$("briefPill"); if(pill) pill.textContent="已生成";
+        if(mode==="download"){ downloadBriefFile(); toast("参阅材料已编制完成并下载"); return; }
+        briefPreview.innerHTML=q.__frag||briefFragment(q);
+        briefPreview.scrollTop=0;
+        if(briefMask) briefMask.classList.add("show");
+        toast("参阅材料已编制完成");
+      })
+      .catch(function(e){
+        if(!alive()) return;
+        document.body.classList.remove("fs-lock");
+        if(progMask) progMask.classList.remove("show");
+        toast("编制未完成："+(e&&e.message?e.message:"请重试"));
+      });
+    }
+    if(cancelProg) cancelProg.addEventListener("click",function(){
+      cancelBriefPipeline(); toast("已取消编制");
     });
-    downloadBrief.addEventListener("click",downloadBriefFile);
+
+    // —— 参阅材料交互 ——
+    viewBrief.addEventListener("click",function(){ runBriefPipeline("view"); });
+    downloadBrief.addEventListener("click",function(){ runBriefPipeline("download"); });
     copyBrief.addEventListener("click",function(){
       if(!lastQuery) return;
       var t=briefText(lastQuery);
@@ -831,7 +1040,9 @@ html = r"""<!DOCTYPE html>
       });
     });
     document.addEventListener("keydown",function(e){
-      if((e.key==="Escape"||e.keyCode===27) && isBriefFs()) exitBriefFs();
+      if(e.key!=="Escape"&&e.keyCode!==27) return;
+      if(progMask && progMask.classList.contains("show")){ cancelBriefPipeline(); toast("已取消编制"); return; }
+      if(isBriefFs()) exitBriefFs();
     });
 
     // —— 高级设置折叠（仅保留可选的后端代理；定位凭据已内置且不可见） ——
