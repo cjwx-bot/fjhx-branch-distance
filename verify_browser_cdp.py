@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """两阶段编制交互的浏览器端回归测试（Edge CDP，仅用标准库）。
 
-验证链路：录入机构名称 → 查询网点 → 点击「编制并查看参阅材料」→
-进度层出现并按阶段推进 → 完成后弹出最终参阅材料全文。
+验证链路：录入机构名称 → 命中技能全网检索核验资料库并按真实坐标反馈最近网点 →
+点击「编制并查看参阅材料」→ 五阶段进度层（零 API 授权、无外部网络请求）→
+完成后弹出以已核验事实为主体的最终参阅材料全文；另验证未收录机构的如实降级路径。
 """
 import base64
 import io
@@ -116,9 +117,12 @@ def main():
         # ① 查询阶段：录入机构名称并点击查询
         ev("document.getElementById('orgName').value='福州市民族与宗教事务局';"
            "document.getElementById('searchBtn').click();true")
-        time.sleep(4.5)
+        time.sleep(0.8)   # 零外部网络请求，查询为同步本地计算
         hero = ev("document.getElementById('hero').innerText") or ""
+        badge = ev("document.getElementById('orgBadge').innerText") or ""
         ck("查询反馈最近网点", "福建海峡银行" in hero, hero.replace("\n", " ")[:70])
+        ck("按资料库真实坐标测算", "福州华林支行" in hero, hero.replace("\n", " ")[:70])
+        ck("命中技能核验资料库", "已命中技能全网检索核验资料库" in badge, badge[:90])
         ck("查询阶段材料为待编制", ev("document.getElementById('briefPill').textContent") == "待编制")
         ck("查询阶段未预生成全文",
            ev("document.getElementById('briefPreview').innerHTML.length") == 0)
@@ -148,19 +152,38 @@ def main():
         ck("编制完成后弹出全文", done)
         ck("进度层已关闭", ev("document.getElementById('progMask').classList.contains('show')") is False)
         info = ev("(function(){var d=document.getElementById('briefPreview');"
-                  "return {len:d.innerHTML.length, t:d.innerText};})()")
+                  "return {len:d.innerHTML.length, t:d.innerText, h:d.innerHTML};})()")
         if isinstance(info, dict):
             body = info.get("t", "") or ""
+            html_body = info.get("h", "") or ""
             ck("全文字数达标", info.get("len", 0) > 15000, str(info.get("len")))
             ck("含官方核验直达入口", "（七）官方核验直达入口" in body)
-            ck("含在线复核字段", "页面在线复核（编制时）" in body)
-            ck("含在线复核区划代码", "350102" in body or "未取得结果" in body)
+            ck("含资料库命中标注", "技能全网检索核验资料库" in body and "已命中" in body)
+            ck("含已核验机构事实", "113501007380396651" in body and "福飞路井尾5号" in body)
+            ck("含真实内设机构", "宗教事务三处" in body and "政策法规处" in body)
+            ck("含真实下属单位", "福州市民族宗教事务服务中心" in body)
+            ck("含证据索引与官方来源", "（八）全网检索证据索引" in body and "fuzhou.gov.cn" in html_body)
+            ck("含核验状态与未核验标注", "官方页面直接载明" in body and "未检索到公开可核验信息" in body)
+            ck("无旧在线复核口径", "页面在线复核（编制时）" not in body and "腾讯位置服务地点建议接口" not in body)
+            ck("不含内部级领导姓名", "张清泉" not in body)
+            ck("含零 API 授权声明", "零 API 授权" in body)
             ck("含密级标识", "行内参考 请勿外传" in body)
             ck("状态改为已生成", ev("document.getElementById('briefPill').textContent") == "已生成")
-            print("  在线复核结果：", "成功取得行政区划数据" if "350102" in body else "未取得，已如实降级")
+            print("  资料库命中结果：已以公开渠道核验事实生成第三章并附证据索引")
         else:
             ck("全文内容读取", False, str(info)[:150])
         shot(ws, sid, os.path.join(ROOT, "_pipeline_final.png"))
+
+        # ④ 未收录机构：如实降级，不以模板内容冒充核验结果
+        ev("document.getElementById('closeBrief').click();"
+           "document.getElementById('refreshBtn').click();"
+           "document.getElementById('orgName').value='鼓楼区某未收录单位';"
+           "document.getElementById('searchBtn').click();true")
+        time.sleep(0.6)
+        badge2 = ev("document.getElementById('orgBadge').innerText") or ""
+        hero2 = ev("document.getElementById('hero').innerText") or ""
+        ck("未收录机构如实提示", "资料库未收录" in badge2, badge2[:80])
+        ck("未收录机构仍反馈近似网点", "福建海峡银行" in hero2, hero2.replace("\n", " ")[:70])
 
         errs = ev("window.__errs") or []
         ck("无运行时脚本错误", len(errs) == 0, str(errs)[:160])
