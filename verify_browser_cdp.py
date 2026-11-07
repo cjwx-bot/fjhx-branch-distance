@@ -3,8 +3,9 @@
 """两阶段编制交互的浏览器端回归测试（Edge CDP，仅用标准库）。
 
 验证链路：录入机构名称 → 命中技能全网检索核验资料库并按真实坐标反馈最近网点 →
-点击「编制并查看参阅材料」→ 五阶段进度层（零 API 授权、无外部网络请求）→
-完成后弹出以已核验事实为主体的最终参阅材料全文；另验证未收录机构的如实降级路径。
+点击「编制并查看参阅材料」→ 五阶段进度层（前端零 Key、编制阶段无外部网络请求）→
+完成后弹出以已核验事实为主体的最终参阅材料全文；另验证未收录机构经同源后端定位
+失败后的如实降级路径，以及注入模拟 /api/geo 响应时的实时真实定位与结果区分度。
 """
 import base64
 import io
@@ -117,7 +118,7 @@ def main():
         # ① 查询阶段：录入机构名称并点击查询
         ev("document.getElementById('orgName').value='福州市民族与宗教事务局';"
            "document.getElementById('searchBtn').click();true")
-        time.sleep(0.8)   # 零外部网络请求，查询为同步本地计算
+        time.sleep(0.8)   # 资料库命中为同步本地计算，不发起定位请求
         hero = ev("document.getElementById('hero').innerText") or ""
         badge = ev("document.getElementById('orgBadge').innerText") or ""
         ck("查询反馈最近网点", "福建海峡银行" in hero, hero.replace("\n", " ")[:70])
@@ -166,7 +167,8 @@ def main():
             ck("含核验状态与未核验标注", "官方页面直接载明" in body and "未检索到公开可核验信息" in body)
             ck("无旧在线复核口径", "页面在线复核（编制时）" not in body and "腾讯位置服务地点建议接口" not in body)
             ck("不含内部级领导姓名", "张清泉" not in body)
-            ck("含零 API 授权声明", "零 API 授权" in body)
+            ck("含前端零 Key 声明", "前端零 Key" in body)
+            ck("旧零授权口径已清除", "零 API 授权" not in body)
             ck("含密级标识", "行内参考 请勿外传" in body)
             ck("状态改为已生成", ev("document.getElementById('briefPill').textContent") == "已生成")
             print("  资料库命中结果：已以公开渠道核验事实生成第三章并附证据索引")
@@ -179,11 +181,41 @@ def main():
            "document.getElementById('refreshBtn').click();"
            "document.getElementById('orgName').value='鼓楼区某未收录单位';"
            "document.getElementById('searchBtn').click();true")
-        time.sleep(0.6)
+        time.sleep(1.2)   # 同源 /api/geo 返回 404 后经 catch 降级
         badge2 = ev("document.getElementById('orgBadge').innerText") or ""
         hero2 = ev("document.getElementById('hero').innerText") or ""
         ck("未收录机构如实提示", "资料库未收录" in badge2, badge2[:80])
         ck("未收录机构仍反馈近似网点", "福建海峡银行" in hero2, hero2.replace("\n", " ")[:70])
+        ck("无后端时如实标注降级原因", "实时定位服务不可用" in badge2 or "行政区划中心近似" in badge2)
+
+        # ⑤ 注入模拟 /api/geo 响应：验证实时真实定位路径与结果区分度
+        fixtures = {
+            "福州市鼓楼区教育局": {"lat": 26.0912, "lng": 119.2981},
+            "福建省教育厅": {"lat": 26.0755, "lng": 119.3075}
+        }
+        ev("window.__geoFixtures=" + json.dumps(fixtures, ensure_ascii=False) + ";" +
+           "window.fetch=function(u){return Promise.resolve({ok:true,json:function(){" +
+           "var m=/name=([^&]+)/.exec(String(u));var n=m?decodeURIComponent(m[1]):'';" +
+           "var c=window.__geoFixtures[n];" +
+           "return Promise.resolve(c?{found:true,query:n,geo:{lat:c.lat,lng:c.lng,title:n," +
+           "address:'福州市公开办公地址',province:'福建省',city:'福州市',district:'鼓楼区'," +
+           "source:'tencent-place-suggestion'},provider:'腾讯位置服务（WebServiceAPI）'," +
+           "coordSystem:'GCJ-02',verifiedAt:'2026-11-07'}" +
+           ":{found:false,reason:'no-poi',message:'公开地图未匹配'});}});};true")
+
+        def qhero(nm):
+            ev("document.getElementById('refreshBtn').click();" +
+               "document.getElementById('orgName').value=" + json.dumps(nm, ensure_ascii=False) + ";" +
+               "document.getElementById('searchBtn').click();true")
+            time.sleep(0.6)
+            return ((ev("document.getElementById('hero').innerText") or "").replace("\n", " "),
+                    ev("document.getElementById('orgBadge').innerText") or "")
+
+        hg1, bg1 = qhero("福州市鼓楼区教育局")
+        hg2, bg2x = qhero("福建省教育厅")
+        ck("实时定位路径命中", "已取得实时真实坐标" in bg1 and "腾讯位置服务" in bg1, bg1[:90])
+        ck("实时定位仍反馈最近网点", "福建海峡银行" in hg1, hg1[:70])
+        ck("同区两机构结果不再雷同", hg1 != hg2, hg1[:45] + " | " + hg2[:45])
 
         errs = ev("window.__errs") or []
         ck("无运行时脚本错误", len(errs) == 0, str(errs)[:160])
