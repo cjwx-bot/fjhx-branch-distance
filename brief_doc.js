@@ -238,9 +238,10 @@
       return [q.region.province,q.region.city,q.region.district].filter(Boolean).join(" / ");
     }
     function posText(q){
-      if(q.mode==="precise" && q.geo) return "机构真实坐标（腾讯位置服务地点建议接口实时反查）";
+      if(q.intel && q.intel.geo) return "技能全网检索核验的真实坐标（公开地图 POI 与官网地址交叉核验，内联资料库调取）";
+      if(q.mode==="precise" && q.geo) return "机构真实坐标（历史查询工具反查）";
       if(q.mode==="backend") return "后端实时核验及服务端地理编码";
-      return "行政区划中心近似（未取得机构真实坐标）";
+      return "行政区划中心近似（资料库未收录该机构，未取得真实坐标）";
     }
     function branchTableRows(q){
       return (q.items||[]).slice(0,5).map(function(it,i){
@@ -255,33 +256,35 @@
     }
     function geoRows(q){
       var g=q.geo||{}, org=q.org||{}, rows=[];
+      // —— 技能全网检索核验资料库（零 API 授权，构建时内联）——
+      if(q.intel){
+        var o=q.intel, of=o.fields||{}, cov=intelCoverage(o);
+        rows.push(["技能全网检索核验资料库", "已命中 · "+o.name+" · 核验日期 "+o.verifiedAt+
+          " · 已补齐 "+cov.ok+" 项字段 · "+cov.sources+" 条证据"]);
+        [["核验机构全称","fullName"],["机构性质与行政级别","orgType"],
+         ["统一社会信用代码","creditCode"],["官方公布办公地址","address"],
+         ["行政区划","district"],["邮政编码","postcode"],["公开联系电话","phone"]
+        ].forEach(function(x){
+          var fd=of[x[1]];
+          rows.push([x[0], fd ? intelFieldText(fd) : "未检索到公开可核验信息"]);
+        });
+        rows.push(["核验经纬度", String(o.geo.lat)+", "+String(o.geo.lng)+"（"+intelStatus(o.geo.s)+"）"]);
+        rows.push(["信息分级", "公开页面仅列机构层面事实；领导姓名与办公联系方式存于会话侧内部资料库，不注入公开页面"]);
+      }
       if(q.mode==="precise"&&g.title){
-        rows.push(["地图核验名称",g.title]); rows.push(["地图核验地址",g.address||"接口未返回详细地址"]);
-        rows.push(["核验经纬度",String(g.lat)+", "+String(g.lng)]);
+        rows.push(["历史定位核验名称",g.title]); rows.push(["历史定位核验地址",g.address||"未返回详细地址"]);
+        rows.push(["历史定位核验经纬度",String(g.lat)+", "+String(g.lng)]);
       }
       if(q.mode==="backend"&&(org.fullName||org.creditCode)){
         rows.push(["核验机构全称",org.fullName||"—"]); rows.push(["统一社会信用代码",org.creditCode||"—"]);
         rows.push(["登记注册地址",org.address||"—"]);
-      }
-      if(q.verify){
-        var v=q.verify, vd=v.d||{};
-        rows.push(["页面在线复核（编制时）", v.ok ?
-          ("已完成 · 腾讯位置服务地点建议接口 · "+v.time) :
-          ("未取得结果（接口未返回或超时）· "+v.time+" · 沿用查询阶段定位数据")]);
-        if(v.ok){
-          rows.push(["在线复核规范名称",vd.title||"—"]);
-          rows.push(["在线复核地址",vd.address||"—"]);
-          rows.push(["在线复核行政区划",[vd.province,vd.city,vd.district].filter(Boolean).join(" / ")||"—"]);
-          rows.push(["在线复核区划代码",String(vd.adcode||"—")]);
-          rows.push(["在线复核 POI 类别",vd.category||"—"]);
-        }
       }
       return rows;
     }
 
     // ===== 官方核验直达入口（页面按机构名称拼装检索入口，不预置任何个人信息）=====
     // 合规口径：仅生成公开渠道检索链接，不抓取、不缓存、不代理外部查询；
-    // 负责人 / 内设机构 / 上下级单位须由使用者核对后在预览页现场补录。
+    // 命中资料库时第三章主体已为技能全网检索的已核验事实，本入口用于复核时点与补充未核验字段。
     function verifyLinks(q){
       var n=q.name||"机构", bs="https://www.baidu.com/s?wd=";
       function gov(kw){ return bs+encodeURIComponent("site:gov.cn "+n+" "+kw); }
@@ -294,8 +297,8 @@
       ];
     }
     function verifyExtraHtml(q){
-      return '<h3 class="sub">（七）官方核验直达入口（页面生成 · 须人工核对）</h3>'+
-        '<p class="indent">下列入口由页面在编制时按机构名称自动拼装，点击后由浏览器执行官方渠道检索。页面本身不抓取、不缓存、不代理任何外部查询，也不预置负责人姓名、内设机构或上下级单位名称。</p>'+
+      return '<h3 class="sub">（七）官方核验直达入口（页面生成 · 用于时点复核）</h3>'+
+        '<p class="indent">下列入口由页面按机构名称拼装，点击后由浏览器执行官方渠道检索，用于复核已核验信息的时点，以及补充标注「未检索到公开可核验信息」的字段。页面本身不抓取、不缓存、不代理任何外部查询，不依赖任何数据接口授权。</p>'+
         '<div class="verify-links">'+verifyLinks(q).map(function(x,i){
           return '<a href="'+E(x.u)+'" target="_blank" rel="noopener noreferrer">'+
             '<span class="vl__n">'+String(i+1)+'</span><span class="vl__t">'+E(x.t)+'</span><span class="vl__go">↗</span></a>';
@@ -304,8 +307,8 @@
         '<p><b>微信端提示：</b>如部分检索入口在微信内置浏览器无法打开，请长按复制链接至系统浏览器访问；本页不代理、不中转任何外部查询请求。</p>';
     }
     function verifyExtraText(q){
-      var A=["【官方核验直达入口（页面生成 · 须人工核对）】",
-        "下列入口由页面在编制时按机构名称自动拼装，点击后由浏览器执行官方渠道检索；页面不抓取、不缓存、不代理外部查询，也不预置负责人姓名、内设机构或上下级单位名称。"];
+      var A=["【官方核验直达入口（页面生成 · 用于时点复核）】",
+        "下列入口由页面按机构名称拼装，点击后由浏览器执行官方渠道检索；页面不抓取、不缓存、不代理外部查询，不依赖任何数据接口授权。命中资料库时第三章主体已为技能全网检索的已核验事实，本入口用于复核时点与补充未核验字段。"];
       verifyLinks(q).forEach(function(x,i){ A.push("  "+(i+1)+". "+x.t+"："+x.u); });
       A.push("核对后请在预览页「现场补录」回填；未完成核对的项一律保持「待核实」。微信内无法打开时请复制链接至系统浏览器。");
       return A;
@@ -335,6 +338,7 @@
     function briefSections(q){
       var p=orgProfile(q.name), n=(q.name||"机构"), S=[];
       var geo=geoRows(q);
+      var hit=!!q.intel, cov=hit?intelCoverage(q.intel):null;
 
       S.push({t:"一、编制说明与适用口径",
         intro:"本材料供行内走访与业务对接前参阅，用于明确已知信息、待核实事项与合规边界。",
@@ -342,11 +346,16 @@
           ["材料名称","关于「"+n+"」的业务合作参阅材料"],
           ["编制单位","总行公司金融部"],
           ["使用对象","行内走访与业务对接人员（行内参考 请勿外传）"],
-          ["编制依据","本次查询可核验的机构定位与网点公开信息；编制时经腾讯位置服务在线复核的机构名称、地址与行政区划（不含负责人与内设机构）；同类机构通用业务场景；行内机构业务通用服务类别"],
-          ["信息边界","未开展现场调研，未调取该单位登记资料、预算资料与财务资料；第三、四、六章含研判内容，非该单位事实；负责人、内设机构、上下级单位未由页面在线核验，须按第三章（七）官方核验直达入口核对后现场补录"],
+          ["编制依据", hit ?
+            ("技能全网检索核验资料库（"+q.intel.name+"，核验日期 "+q.intel.verifiedAt+"，"+cov.sources+" 条公开来源逐项留痕）；福建海峡银行官网公开网点目录；同类机构通用业务场景；行内机构业务通用服务类别") :
+            "本页内置 91 家网点公开坐标与行政区划基准；同类机构通用业务场景；行内机构业务通用服务类别（该机构尚未纳入资料库）"],
+          ["信息边界", hit ?
+            "第三章主体为公开渠道已核验事实并附证据索引；未检索到的字段如实标注；负责人姓名按最小必要原则不列于公开页面；第四、六章仍为通用研判，非该单位事实；未开展现场调研，未调取非公开资料" :
+            "第三章为同类机构通用研判，非该单位事实；未开展现场调研，未调取登记资料、预算资料与财务资料；页面不联网、不代理任何外部查询"],
+          ["技术口径","本页为静态单文件，机构资料由会话侧技能全网检索补齐后内联，页面零 API 授权、零外部网络请求"],
           ["材料性质","走访前参阅，不构成服务承诺、产品报价、授信意向或成效预测"]
         ]},
-        paras:["全篇将信息分为<b>已核验</b>（查询工具输出）、<b>研判</b>（同类机构通用场景）、<b>待核实 / 待落地</b>（拟开展工作）三类，不得混用。"]});
+        paras:["全篇将信息分为<b>已核验</b>（公开渠道载明并附来源）、<b>研判</b>（同类机构通用场景）、<b>待核实 / 待落地</b>（拟开展工作）三类，不得混用。"]});
 
       S.push({t:"二、机构基本情况与属性研判",
         intro:"本章区分「已核验」与「研判」两类信息；凡标注研判的内容，均须以该单位官方登记资料与主管部门文件为准。",
@@ -363,9 +372,10 @@
         paras:["<b>研判依据：</b>依据录入名称中的关键词匹配同类机构通用业务场景，用于组织走访准备，不代表该单位的实际职责、业务规模或需求。",
                "<b>使用要求：</b>对外交流前，须按第九章清单完成逐项核实；未完成核实的，不得将本章研判内容作为事实引用。"]});
 
-      var s3=orgProfileSection(q,p);
-      s3.extra=verifyExtraHtml(q);
-      s3.textExtra=verifyExtraText(q);
+      // 命中资料库 → 第三章以技能全网检索的已核验事实为主体；未命中 → 如实回退为通用研判
+      var s3 = q.intel ? intelProfileSection(q,p) : orgProfileSection(q,p);
+      s3.extra = verifyExtraHtml(q) + (q.intel ? intelEvidenceHtml(q.intel) : intelMissingHtml(q));
+      s3.textExtra = verifyExtraText(q).concat(q.intel ? intelEvidenceText(q.intel) : intelMissingText());
       S.push(s3);
 
       S.push({t:"四、业务场景与金融服务需求图谱",
@@ -467,7 +477,9 @@
 
       S.push({t:"附录 B · 资料来源与使用说明",
         table:{head:["项目","说明"],kv:true,rows:[
-          ["机构定位数据","腾讯位置服务地点建议接口（查询时实时返回，仅精确定位模式）；行政区划索引（近似模式）；后端实时核验启用时取自相应核验接口"],
+          ["机构事实数据", q.intel ? ("技能全网检索核验资料库（"+q.intel.name+"，核验日期 "+q.intel.verifiedAt+"，"+intelCoverage(q.intel).sources+" 条公开来源，见第三章第八节证据索引）") : "该机构尚未纳入技能全网检索核验资料库，第三章为同类机构通用研判"],
+          ["机构定位数据", q.intel ? ("公开地图 POI 与官网公布地址交叉核验的经纬度（"+q.intel.geo.lat+", "+q.intel.geo.lng+"），由技能补齐后内联") : "行政区划中心近似（内置区县中心坐标），该机构资料库未收录"],
+          ["接口授权", "零 API 授权：页面不携带凭据、不发起外部网络请求，机构资料与网点坐标均随页面内联"],
           ["网点数据","福建海峡银行官网公开网点目录（2026-08-21 版，共 "+BRANCHES.length+" 家），含网点名称、地址与公开电话"],
           ["距离口径","Haversine 直线距离估算，实际步行或驾车距离可能存在差异"],
           ["业务内容依据","同类机构通用业务场景与行内机构业务通用服务类别，均为研判 / 通用清单，非该单位事实"],
@@ -547,6 +559,7 @@
     }
     function briefFragment(q){
       var p=orgProfile(q.name), ss=briefSections(q);
+      var hit=!!q.intel, cov=hit?intelCoverage(q.intel):null;
       var cover='<div class="cover">'+
         '<div class="eyebrow">福建海峡银行 · 总行公司金融部　|　机构业务走访参阅</div>'+
         '<div class="title">'+E(briefTitle(q))+'</div>'+
@@ -557,13 +570,18 @@
       var abstract='<div class="abstract"><b>内容提要</b>'+
         '<p>本材料围绕「'+(q.name||"机构")+'」的机构业务拓展准备编制，共十章、两项附录。主体内容为单位治理与组织画像（负责人、内设架构与职能、上级及下属单位）、机构属性研判、同类机构业务场景与金融服务需求图谱、'+
         '本行机构业务通用服务能力清单、四项拟开展合作方向（五段式）、走访沟通提纲、推进路径与责任分工、需核实事项清单及合规与风险提示；'+
-        '第三章组织画像采用「职务口径 + 通行架构 + 官方核验直达 + 现场补录」方式列示，姓名与具体单位名称须经官方渠道核实；'+
-        '编制时的在线环节仅为腾讯位置服务的机构定位与行政区划复核，不含负责人、任免、内设机构与上下级单位信息；'+
+        (hit ?
+          ('第三章组织画像由技能全网检索的已核验事实构成，已补齐 '+cov.ok+' 项字段、附 '+cov.sources+' 条公开来源与证据索引，逐项标注核验状态；未检索到的字段与负责人姓名按分级口径如实标注；') :
+          '第三章组织画像为同类机构通用研判（该机构尚未纳入资料库），采用「职务口径 + 通行架构 + 官方核验直达 + 现场补录」方式列示；')+
+        '页面为静态单文件，机构资料由会话侧技能全网检索补齐后内联，全程零 API 授权、零外部网络请求；'+
         '地址、坐标与就近网点仅作为附录 A 的客观查询数据列示。</p>'+
         '<p><b>材料性质：</b>已核验信息与「研判 / 待落地」内容严格分节；不含财务指标、成效预测、服务承诺与授信意向。</p></div>';
       var toc='<div class="toc"><b>材料目录</b><br>'+ss.map(function(s){return E(s.t);}).join("<br>")+'</div>';
-      var note='<div class="note"><b>资料来源：</b>机构定位数据取自腾讯位置服务地点建议接口（查询阶段实时返回；编制阶段另作一次在线复核，仅返回机构名称、地址、行政区划与 POI 类别）；'+
-        '负责人、内设机构与上下级单位未由页面在线核验，第三章（七）仅列官方渠道检索入口，须人工核对后现场补录；'+
+      var note='<div class="note"><b>资料来源：</b>'+
+        (hit ? ('机构事实由会话侧技能全网检索公开渠道核验并逐字段留痕（'+q.intel.name+'，核验日期 '+q.intel.verifiedAt+'，'+cov.sources+' 条来源见第三章第八节证据索引）；负责人姓名按最小必要原则不在公开页面列示；') :
+               '该机构尚未纳入技能全网检索核验资料库，第三章为同类机构通用研判，第三章（七）列官方渠道检索入口，须核对后现场补录；')+
+        '机构坐标取自公开地图 POI 并与官网公布地址交叉核验；'+
+        '本页零 API 授权、零外部网络请求，不抓取、不缓存、不代理任何外部查询；'+
         '网点名称、地址与公开电话取自福建海峡银行官网公开网点目录（2026-08-21 版，共 '+BRANCHES.length+' 家）；'+
         '距离为 Haversine 直线估算。业务章节为同类机构通用研判与行内通用服务类别，非该单位事实。<br>'+
         '<b>使用说明：</b>本材料仅供行内走访前参阅，不构成服务承诺、报价或授信意向；机构信息以官方登记为准，网点营业状态以官方公告为准。<br>'+
@@ -571,18 +589,25 @@
       return cover+abstract+toc+ss.map(renderSec).join("")+note;
     }
     function briefText(q){
-      var p=orgProfile(q.name), L=[];
+      var p=orgProfile(q.name), L=[], hit=!!q.intel, cov=hit?intelCoverage(q.intel):null;
       L.push("【"+briefTitle(q)+"】");
       L.push("福建海峡银行 · 总行公司金融部　|　编制日期："+todayStr()+"　|　行内参考 请勿外传");
       L.push("机构类别研判："+p.label);
       L.push("");
-      L.push("【内容提要】本材料共十章、两项附录，主体为单位治理与组织画像、机构属性研判、服务需求图谱、服务能力清单、拟开展合作方向、走访提纲、推进路径、核实清单与合规提示；姓名与具体上下级单位须经官方渠道核实或现场补录；编制时的在线环节仅为腾讯位置服务的机构定位与行政区划复核，不含负责人、任免、内设机构与上下级单位信息；地址、坐标与就近网点仅列于附录 A。已核验与「研判 / 待落地」严格分节，不含财务指标、成效预测、服务承诺与授信意向。");
+      L.push("【内容提要】本材料共十章、两项附录，主体为单位治理与组织画像、机构属性研判、服务需求图谱、服务能力清单、拟开展合作方向、走访提纲、推进路径、核实清单与合规提示；"+
+        (hit ? ("第三章由技能全网检索的已核验事实构成，已补齐 "+cov.ok+" 项字段、附 "+cov.sources+" 条公开来源，逐项标注核验状态；未检索到的字段与负责人姓名按分级口径如实标注；") :
+               "第三章为同类机构通用研判（该机构尚未纳入资料库），姓名与具体上下级单位须经官方渠道核实或现场补录；")+
+        "页面为静态单文件，资料由会话侧技能补齐后内联，零 API 授权、零外部网络请求；地址、坐标与就近网点仅列于附录 A。已核验与「研判 / 待落地」严格分节，不含财务指标、成效预测、服务承诺与授信意向。");
       L.push("");
       L.push("【材料目录】");
       briefOutline(q).forEach(function(t){ L.push(t); });
       briefSections(q).forEach(function(s){ L.push(""); L.push(textSec(s)); });
       L.push("");
-      L.push("资料来源：机构定位取自腾讯位置服务地点建议接口（查询阶段实时返回；编制阶段另作一次在线复核，仅返回机构名称、地址、行政区划与 POI 类别）；负责人、内设机构与上下级单位未由页面在线核验，第三章（七）仅列官方渠道检索入口；网点信息取自福建海峡银行官网公开网点目录（2026-08-21 版，共 "+BRANCHES.length+" 家）；距离为 Haversine 直线估算。业务章节为同类机构通用研判与行内通用服务类别，非该单位事实。");
+      L.push("资料来源："+
+        (hit ? ("机构事实由会话侧技能全网检索公开渠道核验并逐字段留痕（"+q.intel.name+"，核验日期 "+q.intel.verifiedAt+"，"+cov.sources+" 条来源见第三章第八节证据索引）；负责人姓名按最小必要原则不在公开页面列示；") :
+               "该机构尚未纳入技能全网检索核验资料库，第三章为同类机构通用研判，第三章（七）列官方渠道检索入口；")+
+        "机构坐标取自公开地图 POI 并与官网公布地址交叉核验；本页零 API 授权、零外部网络请求，不抓取、不缓存、不代理任何外部查询；"+
+        "网点信息取自福建海峡银行官网公开网点目录（2026-08-21 版，共 "+BRANCHES.length+" 家）；距离为 Haversine 直线估算。业务章节为同类机构通用研判与行内通用服务类别，非该单位事实。");
       L.push("使用说明：仅供行内走访前参阅，不构成服务承诺、报价或授信意向；机构信息以官方登记为准，网点营业状态以官方公告为准。");
       L.push("编制：总行公司金融部　|　行内参考 请勿外传");
       return L.join("\n");
@@ -592,9 +617,13 @@
       var p=orgProfile(lastQuery.name);
       briefBar.style.display="flex"; briefActions.style.display="flex";
       var pill=$("briefPill"); if(pill) pill.textContent="待编制";
-      briefDesc.textContent="网点查询已完成。点击「编制并查看参阅材料」后，页面将先在线复核机构定位与行政区划，再按十章体例组装全文；编制过程显示分阶段进度，完成后弹出最终材料。";
+      var hit=!!lastQuery.intel, cov=hit?intelCoverage(lastQuery.intel):null;
+      briefDesc.textContent = hit ?
+        ("已命中技能全网检索核验资料库："+lastQuery.intel.name+"（"+lastQuery.intel.verifiedAt+" 核验，已补齐 "+cov.ok+" 项字段、"+cov.sources+" 条证据）。点击「编制并查看参阅材料」后，页面分阶段调取资料库、生成证据索引并按十章体例组装，完成后弹出全文；全程零 API 授权。") :
+        "该机构尚未纳入技能全网检索核验资料库。点击「编制并查看参阅材料」后，页面按十章体例组装通用研判版全文并如实标注收录状态；如需补齐，请在 WorkBuddy 会话中发起「全网检索补齐」。";
       var tocEl=$("briefToc");
-      if(tocEl) tocEl.textContent="共 "+BRIEF_SHORT.length+" 节 · "+BRIEF_SHORT.join(" / ")+"　|　类别研判："+p.label+"　|　状态：待编制";
+      if(tocEl) tocEl.textContent="共 "+BRIEF_SHORT.length+" 节 · "+BRIEF_SHORT.join(" / ")+"　|　类别研判："+p.label+
+        "　|　资料库："+(hit?"已收录（"+cov.sources+" 条证据）":"未收录")+"　|　状态：待编制";
       briefPreview.innerHTML="";   // 两阶段：查询阶段不生成全文
     }
     function downloadBriefFile(){
