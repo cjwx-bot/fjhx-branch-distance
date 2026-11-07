@@ -6,13 +6,13 @@
 - 去除：机构类型、单位地址、实时识别、所在地市、所在区县、精确经纬度 六项；
 - 结果区仅展示「距离最近的福建海峡银行网点」（hero + 列表），不再反显机构所在行政区划/经纬度；
 - 机构事实由 WorkBuddy 会话侧技能全网检索公开渠道补齐、逐字段留痕后内联（intel/org_intel.json），
-  页面零 API 授权、零外部网络请求；高级设置仅作可选后端扩展，默认留空。
+  前端零 Key：页面不携带任何地图 Key 或凭据，不直连地图域名；定位按「资料库真实坐标 → 同源后端代理实时坐标 → 行政区划中心近似」三级降级。
 数据：server/data/branches.json 91 家权威网点 + 内置区县中心坐标 + 技能核验资料库，全部内联。
 """
 import json, os, base64, io
 from intel_pipeline import load_validated, write_report
 
-# ===== 零 API 授权的数据链路（用户 2026-11-07 要求）=====
+# ===== B 方案：后端代理实时真实定位 + 三级降级数据链路（2026-11-07）=====
 # 机构事实由 WorkBuddy 会话侧技能全网检索公开渠道补齐、逐字段交叉核验并留痕，
 # 结构化落盘为 intel/org_intel.json；构建时强校验后内联为 window.ORG_INTEL。
 # 页面不携带任何地图 Key / 商业数据接口凭据，也不发起任何外部网络请求。
@@ -332,7 +332,7 @@ html = r"""<!DOCTYPE html>
     .fill__row{display:flex;gap:9px;margin-top:8px}
     .fill__row .btn{height:34px;flex:0 0 auto;padding:0 12px;font-size:12px}
     @media (max-width:560px){.fill__grid{grid-template-columns:1fr}}
-    /* ===== 两阶段编制：资料库调取进度层（2026-11-07 · 零 API 授权） ===== */
+    /* ===== 两阶段编制：资料库调取进度层（2026-11-07 · 前端零 Key） ===== */
     .mask--prog{z-index:70}
     .sheet--prog{display:flex;flex-direction:column;max-width:440px;max-height:88vh;overflow:hidden}
     .prog__top{flex:0 0 auto}
@@ -400,7 +400,7 @@ html = r"""<!DOCTYPE html>
         <!-- 高级设置（可选，默认收起） -->
         <div class="toggle" id="advToggle"><span class="sw"></span><span>高级设置（可选）</span></div>
         <div class="backend" id="advPanel">
-          <p class="backend__tip">本工具默认零 API 授权：机构事实由会话侧技能全网检索公开渠道补齐后内置，录入机构名称即按真实经纬度测算最近网点，无需任何配置或授权。本项为可选扩展入口，留空即完全离线运行。</p>
+          <p class="backend__tip">本工具前端零 Key：机构定位优先调取技能全网检索核验资料库的真实坐标；未收录时由同源后端代理向腾讯位置服务取得 POI 真实坐标，密钥仅在服务端持有、不下发页面；后端不可用或未配置时自动降级为行政区划中心近似并如实标注。本项为可选自定义后端扩展入口，留空即使用同源定位服务。</p>
           <label class="fld" for="backendUrl">后端代理地址 <span class="opt">（实时核验，可选）</span></label>
           <input id="backendUrl" class="inp" type="text" placeholder="后端地址，如 https://你的域名" maxlength="200">
           <button class="btn btn-ghost" id="saveBackend" style="margin-top:10px">保存</button>
@@ -441,8 +441,8 @@ html = r"""<!DOCTYPE html>
           <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合腾讯地图公开位置实测匹配留存。</li>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
           <li>本工具分两步：录入机构名称并点击「查询」即反馈最近网点；点击「编制并查看参阅材料」后显示五阶段进度，调取技能全网检索核验资料库、生成证据索引并组装十章 + 两附录的详细材料，完成后弹出全文。</li>
-          <li>机构全称、性质、主要职能、内设机构、上级及下属单位与真实坐标，均由 WorkBuddy 会话侧技能全网检索公开渠道补齐、逐字段留痕后内置；页面零 API 授权、零外部网络请求。第三章按收录状态分别呈现已核验事实或如实标注的通用研判；负责人姓名按最小必要原则不在公开页面列示，可在「现场补录」回填。支持全屏浏览、复制与下载打印；位置与网点信息仅列于附录 A。</li>
-          <li>未收录机构按行政区划中心近似测算并如实提示；如需补齐，请在 WorkBuddy 会话中指定机构名称发起「全网检索补齐」，重新构建部署后页面刷新即生效。</li>
+          <li>机构全称、性质、主要职能、内设机构、上级及下属单位与真实坐标，均由 WorkBuddy 会话侧技能全网检索公开渠道补齐、逐字段留痕后内置；页面不携带任何地图 Key、不直连地图域名。第三章按收录状态分别呈现已核验事实或如实标注的通用研判；负责人姓名按最小必要原则不在公开页面列示，可在「现场补录」回填。支持全屏浏览、复制与下载打印；位置与网点信息仅列于附录 A。</li>
+          <li>定位共三级：① 已收录机构用全网检索核验的真实坐标；② 未收录机构由同源后端代理取得腾讯位置服务 POI 真实坐标（密钥仅服务端持有）；③ 后端不可用、未配置密钥或地图未匹配时，按行政区划中心近似并逐次如实标注。静态托管环境（如 GitHub Pages）无同源后端，自动进入第③级。如需补齐机构事实，请在 WorkBuddy 会话中指定机构名称发起「全网检索补齐」。</li>
         </ul>
       </section>
     </main>
@@ -480,7 +480,7 @@ html = r"""<!DOCTYPE html>
         <ol class="prog__stages" id="progStages"></ol>
         <details class="prog__note">
           <summary>编制说明与能力边界</summary>
-          <p>本页为静态单文件，五个阶段均为页面内真实计算：匹配技能全网检索核验资料库、拼装证据索引与官方核验入口、按十章体例组装、A4 排版渲染。全程不发起外部网络请求、不依赖任何 API 授权，不上传、不缓存任何机构查询内容。资料库由技能核对官方公开来源后逐字段留痕；未收录机构如实标注，不以模板内容冒充核验结果。</p>
+          <p>五个阶段均为页面内真实计算：调取机构定位基准与核验资料库、拼装证据索引与官方核验入口、按十章体例组装、A4 排版渲染。编制阶段不发起任何外部网络请求；机构实时定位发生在查询阶段，由同源后端代理完成，页面不携带地图 Key、不直连地图域名、不上传或缓存查询内容。资料库由技能核对官方公开来源后逐字段留痕；未收录机构如实标注，不以模板内容冒充核验结果。</p>
         </details>
       </div>
       <div class="sheet__btns"><button class="btn btn-ghost" type="button" id="cancelProg">取消编制</button></div>
@@ -523,7 +523,7 @@ html = r"""<!DOCTYPE html>
     window.REGION_DATA = __REGION_JS__;
     window.PROVINCE_OF_CITY = __PROV_JS__;
     window.BRANCH_DATA = __BRANCH_DATA_JS__;
-    // 技能全网检索核验资料库（构建时内联，零 API 授权）
+    // 技能全网检索核验资料库（构建时内联，前端零 Key）
     window.ORG_INTEL = __ORG_INTEL_JS__;
   </script>
 
@@ -534,8 +534,9 @@ html = r"""<!DOCTYPE html>
     var PROV = window.PROVINCE_OF_CITY || {};
     var BRANCHES = (window.BRANCH_DATA && window.BRANCH_DATA.branches) || [];
     var BACKEND_URL = (function(){ try{ return localStorage.getItem("fjhx_backend_url")||""; }catch(e){ return ""; } })();
-    // 零 API 授权：页面不携带任何地图 Key / 商业数据接口凭据，也不发起任何外部网络请求。
-    // 机构事实由会话侧技能全网检索补齐后内联于 window.ORG_INTEL；此处仅清理历史版本遗留的明文缓存。
+    // 前端零 Key：页面不携带任何地图 Key / 商业数据接口凭据，也不直连任何地图域名。
+    // 机构事实由会话侧技能全网检索补齐后内联于 window.ORG_INTEL；实时定位仅调同源 /api/geo。
+    // 此处清理历史版本遗留的明文缓存。
     try{ localStorage.removeItem("fjhx_map_key"); }catch(e){}
     var lastBackend = null;
     var lastQuery = null;                 // 最近一次查询上下文，供参阅材料编制使用
@@ -567,11 +568,12 @@ html = r"""<!DOCTYPE html>
     }
     function fmtDist(m){ if(m<1000) return Math.round(m)+" 米"; if(m<100000) return (m/1000).toFixed(1)+" 公里"; return Math.round(m/1000)+" 公里"; }
 
-    // ===== 零 API 授权（用户 2026-11-07 要求）=====
-    // 页面不发起任何外部网络请求：机构坐标、全称、性质、主要职能、内设机构、
-    // 上级与下属单位均由 WorkBuddy 会话侧技能全网检索公开渠道补齐后内联于
-    // window.ORG_INTEL；未收录机构按行政区划中心近似，并如实标注「未收录」。
-    // 资料库由 intel_pipeline.py 强校验（来源可追溯 / 状态合法 / 无占位符 / 无禁用词）。
+    // ===== 前端零 Key + 三级定位降级（2026-11-07 B 方案）=====
+    // 机构事实（全称、性质、主要职能、内设机构、上级与下属单位）由会话侧技能
+    // 全网检索公开渠道补齐后内联于 window.ORG_INTEL，由 intel_pipeline.py 强校验。
+    // 定位：① 资料库真实坐标 → ② 同源 /api/geo 后端代理的 POI 真实坐标
+    //        → ③ 行政区划中心近似（并如实标注降级原因）。
+    // 页面始终零 Key、零直连地图域名；密钥仅由服务端环境变量持有。
 
     // 由机构名称自动研判类型（用于后端实时查询入参）
     function classifyType(name){
@@ -684,29 +686,89 @@ html = r"""<!DOCTYPE html>
       renderBriefBar();
     }
 
-    function runLocalSearch(){
+    // ===== 三级定位降级（2026-11-07 · B 方案：后端代理实时真实定位）=====
+    // ① 技能全网检索核验资料库真实坐标（构建时内联，零网络请求）
+    // ② 同源后端 /api/geo 代理的腾讯位置服务 POI 真实坐标（Key 仅服务端持有，前端零 Key）
+    // ③ 行政区划中心近似（后端不可用 / 未配置 / 未命中时，如实标注）
+    // 页面始终不携带任何地图 Key、不直连任何地图域名；定位来源逐次如实标注。
+    var geoToken = 0;
+
+    function runLocalSearch(geoNote){
       lastBackend=null;
-      orgBadge.style.display="none";
+      orgBadge.style.display="flex";
       var name=orgNameInput.value.trim();
       var base=parseAddress(name);
       if(!base){
         hero.style.display="none"; resultList.innerHTML=""; resultActions.style.display="none";
         resultTip.className="tip err";
-        resultTip.textContent="未能识别行政区划，且该机构未收录于技能核验资料库。请在机构名称中填写含区/县名的内容（如“鼓楼区”），或在 WorkBuddy 会话中发起「全网检索补齐」。";
+        resultTip.textContent="未能识别行政区划，且该机构未收录于核验资料库、后端实时定位亦未取得坐标。请在机构名称中填写含区/县名的内容（如“鼓楼区”），或在 WorkBuddy 会话中发起「全网检索补齐」。";
         return;
       }
       var items=computeItems(base.center);
-      orgBadge.style.display="flex";
-      orgBadge.innerHTML="ℹ 资料库未收录「"+esc(name)+"」，按行政区划中心近似测算；如需真实坐标与机构事实，请在 WorkBuddy 会话中发起「全网检索补齐」。";
-      lastQuery={name:name,mode:"approx",region:base,geo:null,intel:null,items:items};
+      orgBadge.innerHTML="ℹ 资料库未收录「"+esc(name)+"」，按行政区划中心近似测算"+
+        (geoNote ? "；"+esc(geoNote) : "")+
+        "；如需已核验机构事实，请在 WorkBuddy 会话中发起「全网检索补齐」。";
+      lastQuery={name:name,mode:"approx",region:base,geo:null,intel:null,items:items,
+        geoNote:geoNote||"行政区划中心近似"};
       renderResult(items, "该机构位置（行政区划中心近似）", "（按行政区划中心近似）");
     }
 
-    // —— 资料库命中：用技能全网检索核验的真实坐标测算最近网点（零 API 授权）——
+    function geoReason(j){
+      if(!j) return "后端未返回有效定位结果";
+      if(j.reason==="no-key") return "服务端未配置定位密钥";
+      if(j.reason==="no-poi") return "公开地图未匹配到该机构真实坐标";
+      if(j.reason==="geo-error") return "实时定位服务暂不可用";
+      return String(j.message||"实时定位未命中");
+    }
+
+    // —— ② 同源后端代理实时真实定位（Key 仅服务端持有）——
+    function doGeoSearch(name){
+      var my=++geoToken;
+      resultTip.className="tip";
+      resultTip.textContent="正在通过同源后端调取「"+name+"」的真实坐标…";
+      hero.style.display="none"; resultList.innerHTML=""; resultActions.style.display="none";
+      orgBadge.style.display="flex";
+      orgBadge.innerHTML="◌ 正在调取实时真实坐标（同源后端代理 · 前端零 Key）…";
+      var ctrl=(typeof AbortController!=="undefined")?new AbortController():null;
+      var timer=setTimeout(function(){ try{ if(ctrl) ctrl.abort(); }catch(e){} },4500);
+      var opt=ctrl?{signal:ctrl.signal,headers:{"Accept":"application/json"}}:{headers:{"Accept":"application/json"}};
+      fetch("api/geo?name="+encodeURIComponent(name),opt)
+        .then(function(r){ if(!r.ok) throw new Error("HTTP-"+r.status); return r.json(); })
+        .then(function(j){
+          clearTimeout(timer);
+          if(my!==geoToken) return;
+          if(!j||!j.found||!j.geo){ runLocalSearch(geoReason(j)); return; }
+          applyGeoResult(name,j);
+        })
+        .catch(function(e){
+          clearTimeout(timer);
+          if(my!==geoToken) return;
+          runLocalSearch("实时定位服务不可用（"+String((e&&e.message)||"请求失败")+"），已回退离线定位");
+        });
+    }
+
+    function applyGeoResult(name,j){
+      lastBackend=null;
+      var g=j.geo;
+      var hint={province:g.province||"福建省",city:g.city||"",district:g.district||"",
+                center:{lat:g.lat,lng:g.lng}};
+      var items=computeItems({lat:g.lat,lng:g.lng});
+      orgBadge.style.display="flex";
+      orgBadge.innerHTML="✓ 已取得实时真实坐标：<b>"+esc(g.title||name)+"</b>"+
+        (g.address?" · "+esc(g.address):"")+
+        " · "+esc(j.provider||"腾讯位置服务")+"（GCJ-02，" +esc(j.verifiedAt||"")+"）";
+      lastQuery={name:name,mode:"geo",region:hint,
+        geo:{title:g.title||name,address:g.address||"",lat:g.lat,lng:g.lng,
+             source:g.source,provider:j.provider,verifiedAt:j.verifiedAt},
+        intel:null,items:items,geoNote:""};
+      renderResult(items, "该机构实时真实坐标（后端代理定位）", "");
+    }
+
+    // —— ① 资料库命中：技能全网检索核验的真实坐标测算（零网络请求）——
     function doIntelSearch(name){
       lastBackend=null;
       var o=lookupIntel(name);
-      if(!o){ runLocalSearch(); return; }
+      if(!o){ doGeoSearch(name); return; }
       var dv=String((o.fields.district&&o.fields.district.v)||"").split(/\s*\/\s*/);
       var hint={province:dv[0]||"福建省",city:dv[1]||"",district:dv[2]||"",
                 center:{lat:o.geo.lat,lng:o.geo.lng}};
@@ -718,8 +780,8 @@ html = r"""<!DOCTYPE html>
         "（"+esc(o.verifiedAt)+" 核验，"+cov.sources+" 条证据）";
       lastQuery={name:name,mode:"intel",region:hint,
         geo:{title:o.name,address:intelFieldText(o.fields.address),lat:o.geo.lat,lng:o.geo.lng},
-        intel:o,items:items};
-      renderResult(items, "该机构真实位置（技能全网检索核验坐标）");
+        intel:o,items:items,geoNote:""};
+      renderResult(items, "该机构真实位置（技能全网检索核验坐标）", "");
     }
 
     searchBtn.addEventListener("click",function(){
@@ -813,6 +875,7 @@ html = r"""<!DOCTYPE html>
 
     // —— 刷新：清空输入与结果，便于再次录入 ——
     refreshBtn.addEventListener("click",function(){
+      geoToken++;                       // 作废未返回的实时定位请求，避免覆盖新查询
       orgNameInput.value="";
       orgBadge.style.display="none";
       hero.style.display="none";
@@ -875,17 +938,18 @@ html = r"""<!DOCTYPE html>
       resetBriefFields(); clearFillInputs(); rerenderBrief(); toast("补录内容已清空");
     });
 
-    // ===== 两阶段编制流水线（2026-11-07 · 零 API 授权版）=====
-    // 查询阶段只反馈最近网点；点击参阅材料按钮后启动本流水线。
-    // 五个阶段均为页面内真实计算：资料库匹配 → 证据索引拼装 → 十章组装 → 排版渲染，
-    // 全程不发起任何外部网络请求、不依赖任何接口授权；阶段名称如实，不伪装为在线核验。
+    // ===== 两阶段编制流水线（2026-11-07 · 前端零 Key 版）=====
+    // 查询阶段只反馈最近网点（其间可由同源后端代理完成一次实时定位）；
+    // 点击参阅材料按钮后启动本流水线，五阶段均为页面内真实计算：
+    // 基准与资料库匹配 → 证据索引拼装 → 十章组装 → 排版渲染，
+    // 编制阶段不发起任何外部网络请求；阶段名称如实，不伪装为在线核验。
     function nowStr(){
       var d=new Date(), p=function(n){return (n<10?"0":"")+n;};
       return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());
     }
     var BRIEF_STAGES=[
       {t:"读取网点基准与机构类别知识库", d:"官网公开网点目录 · 机构画像知识库", pct:14},
-      {t:"匹配技能全网检索核验资料库", d:"机构事实 · 坐标 · 逐字段核验状态", pct:40},
+      {t:"调取定位基准与技能全网检索核验资料库", d:"定位来源 · 机构事实 · 核验状态", pct:40},
       {t:"生成证据索引与官方核验直达入口", d:"来源链接 · 口径差异 · 时点复核入口", pct:58},
       {t:"按十章体例组装参阅材料", d:"已核验事实 · 场景 · 方向 · 合规边界", pct:82},
       {t:"A4 排版渲染与密级标识校验", d:"行内参考 请勿外传", pct:100}
@@ -940,17 +1004,17 @@ html = r"""<!DOCTYPE html>
       // ① 本地基准
       .then(function(){ stageStart(0); return sleepProg(230); })
       .then(function(){ if(!alive()) return; stageDone(0); return sleepProg(150); })
-      // ② 匹配技能全网检索核验资料库（真实本地计算，不联网、不需授权）
+      // ② 调取定位基准与核验资料库（真实本地计算，编制阶段不联网）
       .then(function(){
         if(!alive()) return null;
-        stageStart(1,"正在匹配技能全网检索核验资料库，读取已核验字段、坐标与证据索引…");
+        stageStart(1,"正在调取定位基准与技能全网检索核验资料库，读取已核验字段、坐标与证据索引…");
         return sleepProg(520).then(function(){
           if(!alive()) return null;
           q.intel = q.intel || lookupIntel(q.name) || null;
           var cov = q.intel ? intelCoverage(q.intel) : null;
           setProg(2, BRIEF_STAGES[1].pct, q.intel ?
             ("资料库命中："+q.intel.name+" · 已补齐 "+cov.ok+" 项字段 / "+cov.sources+" 条证据 · 核验坐标 "+q.intel.geo.lat+","+q.intel.geo.lng) :
-            "资料库未收录该机构，第三章按通用研判如实标注收录状态，不发起外部查询");
+            "资料库未收录该机构，沿用查询阶段定位基准，第三章按通用研判如实标注，编制阶段不发起外部查询");
           return sleepProg(420);
         });
       })
@@ -1030,7 +1094,7 @@ html = r"""<!DOCTYPE html>
       if(isBriefFs()) exitBriefFs();
     });
 
-    // —— 高级设置折叠（仅保留可选的后端代理；定位凭据已内置且不可见） ——
+    // —— 高级设置折叠（可选自定义后端；定位凭据仅服务端持有，页面不可见） ——
     if(BACKEND_URL) backendUrlInput.value=BACKEND_URL;
     advToggle.addEventListener("click",function(){
       var show=advPanel.classList.toggle("show");
@@ -1042,14 +1106,14 @@ html = r"""<!DOCTYPE html>
       try{ if(v) localStorage.setItem("fjhx_backend_url",v); else localStorage.removeItem("fjhx_backend_url"); }catch(e){}
       BACKEND_URL=v;
       backendStatus.style.display="block"; backendStatus.className="tip";
-      backendStatus.textContent=v?"已保存可选后端地址；留空则保持零 API 授权的离线模式。":"已清除，恢复零 API 授权的离线模式（技能资料库 + 行政区划近似）。";
+      backendStatus.textContent=v?"已保存自定义后端地址；留空则使用同源实时定位服务（前端零 Key）。":"已清除，恢复同源实时定位服务；无后端时自动降级为行政区划中心近似。";
     });
 
     // 顶部徽标随资料库规模动态生成，避免静态文案与实际数据漂移
     (function(){
       var badge=document.querySelector(".top__badge");
       if(badge) badge.innerHTML='<span class="dot"></span>已收录 '+BRANCHES.length+' 家网点 · '+
-        (((window.ORG_INTEL||{}).orgs)||[]).length+' 家核验机构 · 零 API 授权';
+        (((window.ORG_INTEL||{}).orgs)||[]).length+' 家核验机构 · 前端零 Key';
     })();
   })();
   </script>
