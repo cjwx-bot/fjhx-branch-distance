@@ -108,7 +108,11 @@ for (const nm of demoNames){
              frag.indexOf('附录 B')>=0 && frag.indexOf('单位治理与组织画像')>=0 &&
              frag.indexOf('主要及相关负责人')>=0 && frag.indexOf('上级主管与业务指导单位')>=0 &&
              frag.indexOf('下属及归口管理单位')>=0 &&
-             frag.indexOf('内设机构及职责分工')>=0 && bad.length===0 && outline.length===12;
+             frag.indexOf('内设机构及职责分工')>=0 &&
+             frag.indexOf('（七）官方核验直达入口')>=0 && frag.indexOf('site%3Agov.cn')>=0 &&
+             frag.indexOf('gsxt.gov.cn')>=0 && frag.indexOf('creditchina.gov.cn')>=0 &&
+             text.indexOf('官方核验直达入口')>=0 &&
+             bad.length===0 && outline.length===12;
   if(!ok) briefOk=false;
   console.log(`  [${nm}] 章节${secs} 方向卡片${cards} HTML ${frag.length}字 文本 ${text.length}字 异常值[${bad.join(',')||'无'}] => ${ok?'通过':'失败'}`);
 }
@@ -156,3 +160,64 @@ const pageChecks = {
 Object.keys(pageChecks).forEach(k => { console.log('  ' + k + ':', pageChecks[k] ? '通过' : '失败'); if(!pageChecks[k]) extraOk = false; });
 console.log('  补充校验:', extraOk ? '通过' : '失败');
 if(!extraOk) process.exitCode = 1;
+
+
+// 6) 两阶段编制：进度层要素、真实在线复核函数、在线复核结果写入材料实跑
+console.log('\n两阶段编制与进度层：');
+let stageOk = true;
+const stageChecks = {
+  '进度层弹窗': html.indexOf('id="progMask"') >= 0 && html.indexOf('class="mask mask--prog"') >= 0,
+  '进度条与百分比': html.indexOf('id="progFill"') >= 0 && html.indexOf('id="progPct"') >= 0,
+  '阶段清单容器': html.indexOf('id="progStages"') >= 0,
+  '五个真实阶段': html.indexOf('var BRIEF_STAGES=') >= 0 &&
+                  (html.match(/\{t:"[^"]+", d:"[^"]+", pct:/g)||[]).length === 5,
+  '在线复核函数': html.indexOf('function placeVerify(') >= 0 &&
+                  html.indexOf('apis.map.qq.com/ws/place/v1/suggestion') >= 0,
+  '流水线与取消': html.indexOf('function runBriefPipeline(') >= 0 &&
+                  html.indexOf('function cancelBriefPipeline(') >= 0 &&
+                  html.indexOf('id="cancelProg"') >= 0,
+  '两阶段按钮': html.indexOf('编制并查看参阅材料') >= 0 && html.indexOf('编制并下载材料') >= 0 &&
+                html.indexOf('id="briefPill"') >= 0,
+  '查询阶段不预生成全文': html.indexOf('briefPreview.innerHTML="";   // 两阶段') >= 0,
+  '完成后弹出全文': html.indexOf('briefMask.classList.add("show")') >= 0,
+  '如实边界声明': html.indexOf('不由页面在线核验') >= 0 &&
+                  html.indexOf('不预置负责人姓名') >= 0,
+  '旧一键生成已移除': html.indexOf('briefPreview.innerHTML=briefFragment(lastQuery);\n      briefPreview.scrollTop=0;\n      briefMask.classList.add("show")') < 0
+};
+Object.keys(stageChecks).forEach(k => {
+  console.log('  ' + k + ':', stageChecks[k] ? '通过' : '失败');
+  if(!stageChecks[k]) stageOk = false;
+});
+
+try {
+  bx.lastQuery = {name:'福州市民族与宗教事务局', mode:'precise',
+    region:{province:'福建省',city:'福州市',district:'鼓楼区'},
+    geo:{title:'福州市民族与宗教事务局',address:'福州市鼓楼区福飞路井尾5号',lat:26.116998,lng:119.296707},
+    items:demoItems,
+    verify:{ok:true, time:'2026-11-07 17:30', d:{title:'福州市民族与宗教事务局',
+      address:'福建省福州市鼓楼区福飞路井尾5号', province:'福建省', city:'福州市', district:'鼓楼区',
+      adcode:350102, category:'机构团体:政府机关'}}};
+  const vf = vm.runInContext('briefFragment(lastQuery)', bx);
+  const vt = vm.runInContext('briefText(lastQuery)', bx);
+  const vChecks = {
+    '在线复核状态写入': vf.indexOf('页面在线复核（编制时）') >= 0,
+    '行政区划代码写入': vf.indexOf('350102') >= 0,
+    'POI 类别写入': vf.indexOf('机构团体:政府机关') >= 0,
+    '复核来源标注': vf.indexOf('腾讯位置服务地点建议接口') >= 0,
+    '纯文本同步': vt.indexOf('在线复核规范名称') >= 0 && vt.indexOf('350102') >= 0
+  };
+  Object.keys(vChecks).forEach(k => {
+    console.log('  ' + k + ':', vChecks[k] ? '通过' : '失败');
+    if(!vChecks[k]) stageOk = false;
+  });
+  // 降级路径：接口未返回结果时不得阻塞、不得虚构
+  bx.lastQuery.verify = {ok:false, d:null, time:'2026-11-07 17:31'};
+  const df = vm.runInContext('briefFragment(lastQuery)', bx);
+  const downgrade = df.indexOf('未取得结果（接口未返回或超时）') >= 0 &&
+                    df.indexOf('350102') < 0 && df.indexOf('undefined') < 0;
+  console.log('  在线失败降级:', downgrade ? '通过' : '失败');
+  if(!downgrade) stageOk = false;
+} catch(e){ console.log('  在线复核实跑异常:', e.message); stageOk = false; }
+
+console.log('  两阶段校验:', stageOk ? '通过' : '失败');
+if(!stageOk) process.exitCode = 1;
