@@ -199,8 +199,16 @@ const stageChecks = {
   '前端零 Key 声明': html.indexOf('前端零 Key') >= 0,
   '旧零授权口径已清除': html.indexOf('零 API 授权') < 0,
   '三级定位降级说明': html.indexOf('定位共三级') >= 0,
-  '同源后端定位入口': html.indexOf('fetch("api/geo?name="') >= 0 && html.indexOf('function applyGeoResult(') >= 0,
-  '降级原因如实标注': html.indexOf('function geoReason(') >= 0 && html.indexOf('已回退离线定位') >= 0,
+  '定位入口（同源/跨域代理双通道）': html.indexOf('var GEO_PROXY =') >= 0 &&
+                    html.indexOf('var geoUrl = GEO_PROXY ?') >= 0 &&
+                    html.indexOf('fetch(geoUrl,opt)') >= 0 && html.indexOf('function applyGeoResult(') >= 0,
+  '降级原因如实标注': html.indexOf('function geoReason(') >= 0 &&
+                    html.indexOf('实时高德地图定位未就绪') >= 0 &&
+                    html.indexOf('按行政区划中心近似测算') >= 0,
+  '画像代理与结果卡片已内联': html.indexOf('var PROFILE_PROXY =') >= 0 &&
+                    html.indexOf('function showProfile(') >= 0 &&
+                    html.indexOf('var pUrl = PROFILE_PROXY') >= 0 &&
+                    html.indexOf('id="profileBox"') >= 0,
   '刷新作废未完成请求': html.indexOf('geoToken++') >= 0,
   '无地图接口残留': html.indexOf('apis.map.qq.com') < 0 &&
                     html.indexOf('restapi.amap.com') < 0 &&
