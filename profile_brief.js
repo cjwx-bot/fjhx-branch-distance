@@ -1,12 +1,12 @@
-    // ===== 启信慧眼单位画像（编制参阅材料时经同源 /api/profile 调取 · 2026-11-07）=====
+    // ===== 启信慧眼单位画像（编制参阅材料时经后端 /api/profile 调取（静态版经跨域代理） · 2026-11-07）=====
     // 数据由 WorkBuddy 会话侧调用启信慧眼已授权接口核验后结构化落盘，构建/部署时随服务端提供；
-    // 页面点击「编制并查看参阅材料」后发起同源请求调取，前端零凭据、不直连商业数据域名。
+    // 页面点击「编制并查看参阅材料」后向后端 /api/profile 发起请求调取，前端零凭据、不直连商业数据域名。
     // 命中则展示已核验机构画像并逐字段标注状态；未命中或通道不可用一律如实标注，不伪造、不推断。
     function profileHit(q){ return !!(q && q.profile && q.profile.found && q.profile.profile); }
     function profileReasonText(q){
       var r=q && q.profileReason;
       if(r==="not-in-profile-library") return "该单位未收录于启信慧眼核验画像库";
-      if(r==="profile-error" || r==="offline") return "同源画像通道不可用（离线或后端未启用）";
+      if(r==="profile-error" || r==="offline") return "画像通道不可用（离线或后端未启用）";
       if(r==="provider-auth-failed") return "实时画像通道鉴权未通过";
       if(r==="provider-unavailable" || r==="provider-not-configured") return "实时画像通道尚未配置有效密钥";
       if(r==="empty-name") return "缺少机构名称";
@@ -16,7 +16,7 @@
       var L=[];
       L.push('<h3 class="sub">（九）启信慧眼单位画像（编制时调取 · 可复核）</h3>');
       if(!profileHit(q)){
-        L.push('<p class="indent">本次编制已就「'+E((q&&q.name)||"该机构")+'」向同源 <code>/api/profile</code> 发起画像调取，结果为：<b>未取得该单位画像</b>。原因：'+E(profileReasonText(q))+'。</p>');
+        L.push('<p class="indent">本次编制已就「'+E((q&&q.name)||"该机构")+'」向后端 <code>/api/profile</code> 发起画像调取，结果为：<b>未取得该单位画像</b>。原因：'+E(profileReasonText(q))+'。</p>');
         L.push('<p class="indent">第三章其余内容仍按既有口径出具：已收录资料库的机构以技能全网检索核验事实为主体，未收录机构为同类机构通用研判，均不因画像调取失败而改变性质或冒充核验结果。</p>');
         L.push('<p><b>补齐路径：</b>在 WorkBuddy 会话中发起「画像补齐 &lt;机构全称&gt;」，由会话侧启信慧眼通道按统一社会信用代码锁定主体、逐字段核验后写入画像库，重新部署后页面刷新即可调取。</p>');
         return L.join("");
@@ -48,7 +48,7 @@
     function profileText(q){
       var A=["【启信慧眼单位画像（编制时调取 · 可复核）】"];
       if(!profileHit(q)){
-        A.push("  本次编制已向同源 /api/profile 发起调取，未取得「"+((q&&q.name)||"该机构")+"」画像。原因："+profileReasonText(q)+"。");
+        A.push("  本次编制已向后端 /api/profile 发起调取，未取得「"+((q&&q.name)||"该机构")+"」画像。原因："+profileReasonText(q)+"。");
         A.push("  第三章其余内容按既有口径出具，不因画像调取失败而冒充核验结果。");
         A.push("  补齐路径：在 WorkBuddy 会话中发起「画像补齐 <机构全称>」，核验落盘并重新部署后刷新生效。");
         return A;
