@@ -248,6 +248,9 @@ html = r"""<!DOCTYPE html>
     .tip.err{background:#fdecea;color:var(--danger)}
 
     .orgbadge{display:none;background:var(--ok-soft);border:1px solid #c4e8d2;border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.6;color:#1c7a45;margin-bottom:12px;word-break:break-word}
+    .orgbadge.badge-warn{background:#fff4e5;border-color:#f3c98b;color:#9a5b00}
+    .badge-link{color:#0b5fff;text-decoration:underline;font-weight:600;cursor:pointer}
+    .badge-link:hover{color:#0837c4}
     .orgbadge b{color:#13683a}
 
     .hero{display:none;border-radius:16px;overflow:hidden;margin-bottom:12px;
@@ -702,10 +705,22 @@ html = r"""<!DOCTYPE html>
     // 跨域代理 URL（构建时注入）：非空时查询阶段经该 URL 调主链接后端 /api/geo 取真实坐标；
     // 留空则使用同源相对路径（主链接Web渲染）。两种方式均不向前端暴露任何地图 Key。
     var GEO_PROXY = "__GEO_PROXY__";
+    // 由跨域代理 URL 推导「完整版（实时定位）」主页，用于实时定位通道不可用时的自愈跳转。
+    // 主链接（同源）GEO_PROXY 为空 → BACKEND_HOME 为空 → 不渲染自愈入口。
+    var BACKEND_HOME = (function(){
+      if(!GEO_PROXY) return "";
+      var u=GEO_PROXY.replace("/api/geo","/");   // ...host/?sharecode=XXX&name=
+      var i=u.indexOf("&name=");
+      return i>0 ? u.slice(0,i) : u;             // ...host/?sharecode=XXX
+    })();
     var geoToken = 0;
 
+    // 三级定位第三级（离线近似）：仅在「实时高德地图」通道不可用（后端鉴权/网络）
+    // 或「公开地图未匹配到该机构」时才触发。如实标注原因，不再使用「资料库未收录」
+    // 等易被误解为「仅支持预置库」的措辞——本工具对任意机构名均优先调用高德实时定位。
     function runLocalSearch(geoNote){
       lastBackend=null;
+      orgBadge.className="orgbadge badge-warn";
       orgBadge.style.display="block";
       var name=orgNameInput.value.trim();
       var base=parseAddress(name);
@@ -718,14 +733,16 @@ html = r"""<!DOCTYPE html>
       }
       var items=computeItems(base.center);
       var approx=(unrecognized?"按福建省会（福州）中心近似测算":"按行政区划中心近似测算");
-      var note=(unrecognized
-        ? "未能从机构名称识别到具体行政区划，已按福建省会（福州）中心近似测算，结果仅供参考；建议在名称中补充区/县信息以提升精度"
-        : (geoNote||"行政区划中心近似"));
-      orgBadge.innerHTML="ℹ 资料库未收录「"+esc(name)+"」"+(unrecognized?"，且未识别到区县":"")+"，"+approx+
-        (geoNote&&!unrecognized ? "；"+esc(geoNote) : "")+
-        "；如需已核验机构事实，请在 WorkBuddy 会话中发起「全网检索补齐」。";
+      var why=unrecognized
+        ? "未能从机构名称识别到具体区县"
+        : (geoNote||"实时定位通道暂不可用");
+      var head="⚠ 实时高德地图定位未就绪（"+esc(why)+"），已"+approx;
+      var tail=BACKEND_HOME
+        ? ('；<a class="badge-link" href="'+esc(BACKEND_HOME)+'&name='+encodeURIComponent(name)+'" target="_blank" rel="noopener">打开完整版（实时定位）→</a>')
+        : "；如需以已核验机构事实编制参阅材料，请在 WorkBuddy 会话中发起「全网检索补齐」。";
+      orgBadge.innerHTML=head+tail;
       lastQuery={name:name,mode:"approx",region:base,geo:null,intel:null,items:items,
-        geoNote:note};
+        geoNote:why};
       renderResult(items, "该机构位置（近似测算）", "（"+approx+"）");
     }
 
@@ -762,7 +779,7 @@ html = r"""<!DOCTYPE html>
         .catch(function(e){
           clearTimeout(timer);
           if(my!==geoToken) return;
-          runLocalSearch("实时定位服务不可用（"+String((e&&e.message)||"请求失败")+"），已回退离线定位");
+          runLocalSearch("后端/网络不可达（"+String((e&&e.message)||"请求失败")+"）");
         });
     }
 
