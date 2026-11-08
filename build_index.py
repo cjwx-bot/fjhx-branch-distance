@@ -15,7 +15,8 @@ from intel_pipeline import load_validated, write_report
 # ===== B 方案：后端代理实时真实定位 + 三级降级数据链路（2026-11-07）=====
 # 机构事实由 WorkBuddy 会话侧技能全网检索公开渠道补齐、逐字段交叉核验并留痕，
 # 结构化落盘为 intel/org_intel.json；构建时强校验后内联为 window.ORG_INTEL。
-# 页面不携带任何地图 Key / 商业数据接口凭据，也不发起任何外部网络请求。
+# 页面不携带任何地图 Key / 商业数据接口凭据，不直连任何第三方地图域名；
+# 实时定位仅向同源 /api/geo 发起一次请求，由后端代理持有高德 Web服务 Key。
 INTEL_DATA, INTEL_STATS = load_validated()
 write_report(INTEL_DATA, INTEL_STATS)
 ORG_INTEL_JS = json.dumps(INTEL_DATA, ensure_ascii=False, separators=(",", ":"))
@@ -84,7 +85,7 @@ BRANCH_JSON = os.path.join(BASE, "server", "data", "branches.json")
 # org_struct.js：单位治理与组织画像知识库（通用研判口径）
 # brief_doc.js ：十章章节编排、HTML / 纯文本双渲染与导出
 # intel_brief.js：技能全网检索核验资料库的匹配、事实渲染与证据索引
-_BRIEF_PARTS = ["org_struct.js", "brief_doc.js", "intel_brief.js"]
+_BRIEF_PARTS = ["org_struct.js", "brief_doc.js", "intel_brief.js", "profile_brief.js"]
 BRIEF_JS = "\n".join(
     io.open(os.path.join(BASE, n), "r", encoding="utf-8").read().rstrip("\n")
     for n in _BRIEF_PARTS
@@ -241,7 +242,7 @@ html = r"""<!DOCTYPE html>
     .tip{font-size:12.5px;color:var(--ink-2);background:var(--brand-soft);border-radius:11px;padding:10px 12px;line-height:1.55}
     .tip.err{background:#fdecea;color:var(--danger)}
 
-    .orgbadge{display:none;align-items:center;gap:8px;background:var(--ok-soft);border:1px solid #c4e8d2;border-radius:11px;padding:10px 12px;font-size:13px;color:#1c7a45;margin-bottom:12px}
+    .orgbadge{display:none;background:var(--ok-soft);border:1px solid #c4e8d2;border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.6;color:#1c7a45;margin-bottom:12px;word-break:break-word}
     .orgbadge b{color:#13683a}
 
     .hero{display:none;border-radius:16px;overflow:hidden;margin-bottom:12px;
@@ -400,7 +401,7 @@ html = r"""<!DOCTYPE html>
         <!-- 高级设置（可选，默认收起） -->
         <div class="toggle" id="advToggle"><span class="sw"></span><span>高级设置（可选）</span></div>
         <div class="backend" id="advPanel">
-          <p class="backend__tip">本工具前端零 Key：机构定位优先调取技能全网检索核验资料库的真实坐标；未收录时由同源后端代理向腾讯位置服务取得 POI 真实坐标，密钥仅在服务端持有、不下发页面；后端不可用或未配置时自动降级为行政区划中心近似并如实标注。本项为可选自定义后端扩展入口，留空即使用同源定位服务。</p>
+          <p class="backend__tip">本工具前端零 Key：机构定位优先调取技能全网检索核验资料库的真实坐标；未收录时由同源后端代理向高德地图开放平台取得 POI 真实坐标，密钥仅在服务端持有、不下发页面；后端不可用或未配置时自动降级为行政区划中心近似并如实标注。本项为可选自定义后端扩展入口，留空即使用同源定位服务。</p>
           <label class="fld" for="backendUrl">后端代理地址 <span class="opt">（实时核验，可选）</span></label>
           <input id="backendUrl" class="inp" type="text" placeholder="后端地址，如 https://你的域名" maxlength="200">
           <button class="btn btn-ghost" id="saveBackend" style="margin-top:10px">保存</button>
@@ -438,11 +439,11 @@ html = r"""<!DOCTYPE html>
         <ul class="notes">
           <li>适用对象：福建省内及浙江温州地区的党政机关、事业单位、群团组织。</li>
           <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
-          <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合腾讯地图公开位置实测匹配留存。</li>
+          <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合合规公开地图（GCJ-02）位置实测匹配留存。</li>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
           <li>本工具分两步：录入机构名称并点击「查询」即反馈最近网点；点击「编制并查看参阅材料」后显示五阶段进度，调取技能全网检索核验资料库、生成证据索引并组装十章 + 两附录的详细材料，完成后弹出全文。</li>
           <li>机构全称、性质、主要职能、内设机构、上级及下属单位与真实坐标，均由 WorkBuddy 会话侧技能全网检索公开渠道补齐、逐字段留痕后内置；页面不携带任何地图 Key、不直连地图域名。第三章按收录状态分别呈现已核验事实或如实标注的通用研判；负责人姓名按最小必要原则不在公开页面列示，可在「现场补录」回填。支持全屏浏览、复制与下载打印；位置与网点信息仅列于附录 A。</li>
-          <li>定位共三级：① 已收录机构用全网检索核验的真实坐标；② 未收录机构由同源后端代理取得腾讯位置服务 POI 真实坐标（密钥仅服务端持有）；③ 后端不可用、未配置密钥或地图未匹配时，按行政区划中心近似并逐次如实标注。静态托管环境（如 GitHub Pages）无同源后端，自动进入第③级。如需补齐机构事实，请在 WorkBuddy 会话中指定机构名称发起「全网检索补齐」。</li>
+          <li>定位共三级：① 已收录机构用全网检索核验的真实坐标；② 未收录机构由同源后端代理取得高德地图 POI 真实坐标（密钥仅服务端持有）；③ 后端不可用、未配置密钥或地图未匹配时，按行政区划中心近似并逐次如实标注。静态托管环境（如 GitHub Pages）无同源后端，自动进入第③级。如需补齐机构事实，请在 WorkBuddy 会话中发起「全网检索补齐」；如需补齐单位画像，发起「画像补齐 &lt;机构全称&gt;」。</li>
         </ul>
       </section>
     </main>
@@ -480,7 +481,7 @@ html = r"""<!DOCTYPE html>
         <ol class="prog__stages" id="progStages"></ol>
         <details class="prog__note">
           <summary>编制说明与能力边界</summary>
-          <p>五个阶段均为页面内真实计算：调取机构定位基准与核验资料库、拼装证据索引与官方核验入口、按十章体例组装、A4 排版渲染。编制阶段不发起任何外部网络请求；机构实时定位发生在查询阶段，由同源后端代理完成，页面不携带地图 Key、不直连地图域名、不上传或缓存查询内容。资料库由技能核对官方公开来源后逐字段留痕；未收录机构如实标注，不以模板内容冒充核验结果。</p>
+          <p>五个阶段均为真实执行：读取网点基准、经同源 /api/profile 调取启信慧眼单位画像并读取核验资料库、拼装证据索引与官方核验入口、按十章体例组装、A4 排版渲染。编制阶段仅向同源后端发起一次画像调取（前端零凭据、不直连商业数据域名）；查询阶段的实时定位亦由同源后端代理，页面不携带地图 Key、不上传或缓存查询内容。画像与资料库均由会话侧核对公开来源后逐字段留痕；未收录或通道不可用时如实标注，不以模板内容冒充核验结果。</p>
         </details>
       </div>
       <div class="sheet__btns"><button class="btn btn-ghost" type="button" id="cancelProg">取消编制</button></div>
@@ -688,14 +689,14 @@ html = r"""<!DOCTYPE html>
 
     // ===== 三级定位降级（2026-11-07 · B 方案：后端代理实时真实定位）=====
     // ① 技能全网检索核验资料库真实坐标（构建时内联，零网络请求）
-    // ② 同源后端 /api/geo 代理的腾讯位置服务 POI 真实坐标（Key 仅服务端持有，前端零 Key）
+    // ② 同源后端 /api/geo 代理的高德地图 POI 真实坐标（Key 仅服务端持有，前端零 Key）
     // ③ 行政区划中心近似（后端不可用 / 未配置 / 未命中时，如实标注）
     // 页面始终不携带任何地图 Key、不直连任何地图域名；定位来源逐次如实标注。
     var geoToken = 0;
 
     function runLocalSearch(geoNote){
       lastBackend=null;
-      orgBadge.style.display="flex";
+      orgBadge.style.display="block";
       var name=orgNameInput.value.trim();
       var base=parseAddress(name);
       if(!base){
@@ -716,6 +717,8 @@ html = r"""<!DOCTYPE html>
     function geoReason(j){
       if(!j) return "后端未返回有效定位结果";
       if(j.reason==="no-key") return "服务端未配置定位密钥";
+      if(j.reason==="bad-key") return "地图服务密钥无效或平台类型不匹配";
+      if(j.reason==="quota-exceeded") return "地图服务触发限流或日配额上限";
       if(j.reason==="no-poi") return "公开地图未匹配到该机构真实坐标";
       if(j.reason==="geo-error") return "实时定位服务暂不可用";
       return String(j.message||"实时定位未命中");
@@ -727,7 +730,7 @@ html = r"""<!DOCTYPE html>
       resultTip.className="tip";
       resultTip.textContent="正在通过同源后端调取「"+name+"」的真实坐标…";
       hero.style.display="none"; resultList.innerHTML=""; resultActions.style.display="none";
-      orgBadge.style.display="flex";
+      orgBadge.style.display="block";
       orgBadge.innerHTML="◌ 正在调取实时真实坐标（同源后端代理 · 前端零 Key）…";
       var ctrl=(typeof AbortController!=="undefined")?new AbortController():null;
       var timer=setTimeout(function(){ try{ if(ctrl) ctrl.abort(); }catch(e){} },4500);
@@ -753,10 +756,10 @@ html = r"""<!DOCTYPE html>
       var hint={province:g.province||"福建省",city:g.city||"",district:g.district||"",
                 center:{lat:g.lat,lng:g.lng}};
       var items=computeItems({lat:g.lat,lng:g.lng});
-      orgBadge.style.display="flex";
+      orgBadge.style.display="block";
       orgBadge.innerHTML="✓ 已取得实时真实坐标：<b>"+esc(g.title||name)+"</b>"+
         (g.address?" · "+esc(g.address):"")+
-        " · "+esc(j.provider||"腾讯位置服务")+"（GCJ-02，" +esc(j.verifiedAt||"")+"）";
+        " · "+esc(j.provider||"高德地图开放平台")+"（GCJ-02，" +esc(j.verifiedAt||"")+"）";
       lastQuery={name:name,mode:"geo",region:hint,
         geo:{title:g.title||name,address:g.address||"",lat:g.lat,lng:g.lng,
              source:g.source,provider:j.provider,verifiedAt:j.verifiedAt},
@@ -774,7 +777,7 @@ html = r"""<!DOCTYPE html>
                 center:{lat:o.geo.lat,lng:o.geo.lng}};
       var items=computeItems({lat:o.geo.lat,lng:o.geo.lng});
       var cov=intelCoverage(o);
-      orgBadge.style.display="flex";
+      orgBadge.style.display="block";
       orgBadge.innerHTML="✓ 已命中技能全网检索核验资料库：<b>"+esc(o.name)+"</b> · "+
         esc(intelFieldText(o.fields.orgType))+" · "+esc(intelFieldText(o.fields.address))+
         "（"+esc(o.verifiedAt)+" 核验，"+cov.sources+" 条证据）";
@@ -817,7 +820,7 @@ html = r"""<!DOCTYPE html>
     function renderFromBackend(j){
       var o=j.org||{}; lastBackend=j;
       if(o.fullName||o.creditCode){
-        orgBadge.style.display="flex";
+        orgBadge.style.display="block";
         orgBadge.innerHTML="实时核验：<b>"+esc(o.fullName||"")+(o.creditCode?" · "+esc(o.creditCode):"")+"</b>"+(o.address?" · 📍"+esc(o.address):"");
       } else { orgBadge.style.display="none"; }
       var items=(j.nearest||[]).map(function(x){return {branch:{name:x.name,type:x.type,address:x.address,phone:x.phone},distText:x.distText};});
@@ -942,14 +945,15 @@ html = r"""<!DOCTYPE html>
     // 查询阶段只反馈最近网点（其间可由同源后端代理完成一次实时定位）；
     // 点击参阅材料按钮后启动本流水线，五阶段均为页面内真实计算：
     // 基准与资料库匹配 → 证据索引拼装 → 十章组装 → 排版渲染，
-    // 编制阶段不发起任何外部网络请求；阶段名称如实，不伪装为在线核验。
+    // 编制阶段仅向同源 /api/profile 调取单位画像（前端零凭据、不直连商业数据域名）；
+    // 通道不可用或未收录时如实降级，不伪装为已核验。其余章节为本地资料库与模板组装。
     function nowStr(){
       var d=new Date(), p=function(n){return (n<10?"0":"")+n;};
       return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());
     }
     var BRIEF_STAGES=[
       {t:"读取网点基准与机构类别知识库", d:"官网公开网点目录 · 机构画像知识库", pct:14},
-      {t:"调取定位基准与技能全网检索核验资料库", d:"定位来源 · 机构事实 · 核验状态", pct:40},
+      {t:"调取启信慧眼单位画像与核验资料库", d:"同源 /api/profile · 机构登记画像 · 逐字段核验状态", pct:40},
       {t:"生成证据索引与官方核验直达入口", d:"来源链接 · 口径差异 · 时点复核入口", pct:58},
       {t:"按十章体例组装参阅材料", d:"已核验事实 · 场景 · 方向 · 合规边界", pct:82},
       {t:"A4 排版渲染与密级标识校验", d:"行内参考 请勿外传", pct:100}
@@ -1004,17 +1008,26 @@ html = r"""<!DOCTYPE html>
       // ① 本地基准
       .then(function(){ stageStart(0); return sleepProg(230); })
       .then(function(){ if(!alive()) return; stageDone(0); return sleepProg(150); })
-      // ② 调取定位基准与核验资料库（真实本地计算，编制阶段不联网）
+      // ② 编制阶段真实调取启信慧眼单位画像（同源 /api/profile）+ 读取会话侧核验资料库
       .then(function(){
         if(!alive()) return null;
-        stageStart(1,"正在调取定位基准与技能全网检索核验资料库，读取已核验字段、坐标与证据索引…");
-        return sleepProg(520).then(function(){
+        stageStart(1,"正在经同源 /api/profile 调取启信慧眼单位画像，并读取技能全网检索核验资料库…");
+        q.intel = q.intel || lookupIntel(q.name) || null;
+        var cov = q.intel ? intelCoverage(q.intel) : null;
+        var req = (typeof fetch==="function")
+          ? fetch("api/profile?name="+encodeURIComponent(q.name||""), {cache:"no-store"})
+              .then(function(r){ return r.ok ? r.json() : null; })
+              .catch(function(){ return null; })
+          : Promise.resolve(null);
+        return req.then(function(j){
           if(!alive()) return null;
-          q.intel = q.intel || lookupIntel(q.name) || null;
-          var cov = q.intel ? intelCoverage(q.intel) : null;
-          setProg(2, BRIEF_STAGES[1].pct, q.intel ?
-            ("资料库命中："+q.intel.name+" · 已补齐 "+cov.ok+" 项字段 / "+cov.sources+" 条证据 · 核验坐标 "+q.intel.geo.lat+","+q.intel.geo.lng) :
-            "资料库未收录该机构，沿用查询阶段定位基准，第三章按通用研判如实标注，编制阶段不发起外部查询");
+          q.profile = (j && j.found && j.profile) ? j : null;
+          q.profileReason = j ? (j.reason||"") : "offline";
+          var p = q.profile && q.profile.profile;
+          var msg = p
+            ? ("已调取启信慧眼画像："+p.name+" · "+Object.keys(p.fields||{}).length+" 类字段 / "+(p.sources||[]).length+" 项接口来源（"+(q.profile.verifiedAt||"—")+" 核验）"+(cov?("；资料库另命中 "+q.intel.name+" "+cov.ok+" 项字段"):""))
+            : ("画像调取未命中："+profileReasonText(q)+"；第三章按既有口径如实标注，不伪造画像");
+          setProg(2, BRIEF_STAGES[1].pct, msg);
           return sleepProg(420);
         });
       })
@@ -1132,7 +1145,7 @@ html = html.replace("__DOC_CSS_JS__", DOC_CSS_JS)
 html = html.replace("__DOC_CSS__", DOC_CSS)
 html = html.replace("__BRIEF_JS__", BRIEF_JS)
 # 强校验：构建产物不得残留任何占位符、地图 Key 变量或外部接口调用痕迹
-for _bad in ("__ORG_INTEL_JS__", "__MAP_KEY_EXPR__", "String.fromCharCode", "apis.map.qq.com"):
+for _bad in ("__ORG_INTEL_JS__", "__MAP_KEY_EXPR__", "String.fromCharCode", "apis.map.qq.com", "restapi.amap.com"):
     assert _bad not in html, "构建产物残留禁止内容：" + _bad
 with open(out, "w", encoding="utf-8") as f:
     f.write(html)
