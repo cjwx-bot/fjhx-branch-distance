@@ -199,7 +199,7 @@ def main():
            "var c=window.__geoFixtures[n];" +
            "return Promise.resolve(c?{found:true,query:n,geo:{lat:c.lat,lng:c.lng,title:n," +
            "address:'福州市公开办公地址',province:'福建省',city:'福州市',district:'鼓楼区'," +
-           "source:'tencent-place-suggestion'},provider:'腾讯位置服务（WebServiceAPI）'," +
+           "source:'amap-place-text'},provider:'高德地图开放平台（Web服务 API）'," +
            "coordSystem:'GCJ-02',verifiedAt:'2026-11-07'}" +
            ":{found:false,reason:'no-poi',message:'公开地图未匹配'});}});};true")
 
@@ -213,7 +213,7 @@ def main():
 
         hg1, bg1 = qhero("福州市鼓楼区教育局")
         hg2, bg2x = qhero("福建省教育厅")
-        ck("实时定位路径命中", "已取得实时真实坐标" in bg1 and "腾讯位置服务" in bg1, bg1[:90])
+        ck("实时定位路径命中", "已取得实时真实坐标" in bg1 and "高德地图" in bg1, bg1[:90])
         ck("实时定位仍反馈最近网点", "福建海峡银行" in hg1, hg1[:70])
         ck("同区两机构结果不再雷同", hg1 != hg2, hg1[:45] + " | " + hg2[:45])
 
