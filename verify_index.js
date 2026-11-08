@@ -84,7 +84,7 @@ if(!geoOk) process.exitCode = 1;
 
 // 4) 参阅材料生成逻辑实跑（注入最小 DOM/依赖桩 + 资料库片段）
 console.log('\n参阅材料生成实跑：');
-const briefJs = ['org_struct.js','brief_doc.js','intel_brief.js'].map(n =>
+const briefJs = ['org_struct.js','brief_doc.js','intel_brief.js','profile_brief.js'].map(n =>
   fs.readFileSync(path.join(__dirname, n), 'utf-8')).join('\n');
 const stubEl = () => ({ style:{}, textContent:'', innerHTML:'', value:'',
   addEventListener(){}, classList:{ add(){}, remove(){}, toggle(){} } });
@@ -186,7 +186,7 @@ const stageChecks = {
   '阶段清单容器': html.indexOf('id="progStages"') >= 0,
   '五个真实阶段': html.indexOf('var BRIEF_STAGES=') >= 0 &&
                   (html.match(/\{t:"[^"]+", d:"[^"]+", pct:/g)||[]).length === 5,
-  '阶段②为定位基准与资料库匹配': html.indexOf('调取定位基准与技能全网检索核验资料库') >= 0,
+  '阶段②为画像调取与资料库匹配': html.indexOf('调取启信慧眼单位画像与核验资料库') >= 0 && html.indexOf('api/profile?name=') >= 0,
   '资料库查找与渲染函数': ['function lookupIntel(', 'function intelProfileSection(',
                         'function intelEvidenceHtml(', 'function intelMissingHtml('].every(x => html.indexOf(x) >= 0),
   '流水线与取消': html.indexOf('function runBriefPipeline(') >= 0 &&
@@ -203,11 +203,13 @@ const stageChecks = {
   '降级原因如实标注': html.indexOf('function geoReason(') >= 0 && html.indexOf('已回退离线定位') >= 0,
   '刷新作废未完成请求': html.indexOf('geoToken++') >= 0,
   '无地图接口残留': html.indexOf('apis.map.qq.com') < 0 &&
+                    html.indexOf('restapi.amap.com') < 0 &&
                     html.indexOf('function placeVerify(') < 0 &&
                     html.indexOf('String.fromCharCode') < 0 &&
                     html.indexOf('MAP_KEY') < 0 &&
                     html.indexOf('jsonp(') < 0,
-  '无明文地图 Key': !/[A-Z0-9]{5}(?:-[A-Z0-9]{5}){5}/.test(html),
+  '无明文地图 Key': !/[A-Z0-9]{5}(?:-[A-Z0-9]{5}){5}/.test(html) &&
+                     !/[?&](?:key|map_key)=[a-f0-9]{32}/i.test(html),
   '资料库已内联': html.indexOf('window.ORG_INTEL =') >= 0,
   '如实收录状态': html.indexOf('资料库未收录') >= 0 && html.indexOf('全网检索补齐') >= 0,
   '旧一键生成已移除': html.indexOf('briefPreview.innerHTML=briefFragment(lastQuery);\n      briefPreview.scrollTop=0;\n      briefMask.classList.add("show")') < 0
@@ -260,6 +262,40 @@ try {
     console.log('  未命中路径 · ' + k + ':', missChecks[k] ? '通过' : '失败');
     if(!missChecks[k]) stageOk = false;
   });
+  // 画像命中路径：构造与 profile.js 输出同构的 fake response，验证 profileHtml 渲染真实字段
+  const profJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'intel', 'org_profile.json'), 'utf8'));
+  const po = profJson.orgs[0];
+  const refs = profJson.sourceRefs || {};
+  const resolvedSources = (po.sources || []).map(k => ({
+    id: k, api_ref: (refs[k] || {}).api_ref || k, label: (refs[k] || {}).label || k
+  }));
+  bx.lastQuery = {
+    name: po.name, mode: 'intel', region: {province:'福建省',city:'福州市',district:'鼓楼区'},
+    geo: {title: po.name, lat: po.geo.lat, lng: po.geo.lng}, intel: null, items: demoItems,
+    profile: {
+      found: true, provider: '启信慧眼（会话侧核验画像库）', verifiedAt: profJson.generatedAt, coordSystem: 'GCJ-02',
+      profile: {
+        id: po.id, name: po.name, fields: po.fields, fieldLabels: profJson.fieldLabels,
+        tags: po.tags, geo: po.geo, sources: resolvedSources,
+        policy: { visibility: 'public', scope: '按最小必要与行内参考口径，仅呈现机构属性类公开登记信息' }
+      }
+    }
+  };
+  const pf = vm.runInContext('profileHtml(lastQuery)', bx);
+  const pt = vm.runInContext('profileText(lastQuery)', bx);
+  const profChecks = {
+    '画像章节标记': pf.indexOf('（九）启信慧眼单位画像') >= 0,
+    '渲染统一社会信用代码': pf.indexOf('113501007380396651') >= 0,
+    '渲染主体性质': pf.indexOf('机关') >= 0,
+    '渲染核验接口留痕': pf.indexOf('cn_customer_due_diligence') >= 0 || pf.indexOf('客户信息尽调') >= 0,
+    '渲染使用要求边界': pf.indexOf('不构成客户身份识别结论') >= 0,
+    '纯文本同步': pt.join('\n').indexOf('启信慧眼单位画像') >= 0 && pt.join('\n').indexOf('113501007380396651') >= 0,
+    '无异常值': ['undefined','NaN','[object Object]'].every(k => pf.indexOf(k) < 0)
+  };
+  Object.keys(profChecks).forEach(k => {
+    console.log('  画像命中 · ' + k + ':', profChecks[k] ? '通过' : '失败');
+    if(!profChecks[k]) stageOk = false;
+  });
 } catch(e){ console.log('  资料库路径实跑异常:', e.message); stageOk = false; }
 
 console.log('  两阶段与资料库校验:', stageOk ? '通过' : '失败');
@@ -300,7 +336,7 @@ try {
   const qGeo = {name:'福州市鼓楼区教育局', mode:'geo',
     region:{province:'福建省',city:'福州市',district:'鼓楼区'},
     geo:{title:'福州市鼓楼区教育局',address:'福州市鼓楼区某路1号',lat:26.0912,lng:119.2981,
-         source:'tencent-place-suggestion',provider:'腾讯位置服务（WebServiceAPI）',verifiedAt:'2026-11-07'},
+         source:'amap-place-text',provider:'高德地图开放平台（Web服务 API）',verifiedAt:'2026-11-07'},
     intel:null, items:demoItems, geoNote:''};
   bx.lastQuery = qGeo;
   const gf = vm.runInContext('briefFragment(lastQuery)', bx);
