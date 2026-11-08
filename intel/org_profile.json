@@ -1,0 +1,187 @@
+{
+  "schema": "fjhx-org-profile/v1",
+  "generatedAt": "2026-11-07",
+  "source": "启信慧眼（qixinhuiyan-mcp）",
+  "method": "WorkBuddy 会话侧调用启信慧眼已授权接口（enterprise_resolve / cn_customer_due_diligence / cn_company_registration_face / cn_public_institution_info / cn_company_profile），按统一社会信用代码锁定主体后结构化落盘；页面编制参阅材料时经同源 /api/profile 调取",
+  "policy": {
+    "visibility": "public",
+    "rule": "仅收录机构层面的公开登记信息。按最小必要与行内参考口径，不收录自然人姓名、个人联系方式、对外投资明细、行政许可明细，以及风险/涉诉类标签（历史被执行人、开庭公告、法院公告、欠税等）；未检索到或未公示的字段一律留空并如实标注，不作推断、不作补写",
+    "localTier": "法定代表人/负责人姓名与主要人员仅写入工作区根 intel/org_profile_local.json（internal 级），不注入公开 H5、不上传第三方云、不随 GitHub Pages 发布",
+    "credential": "用户提供的 ent_ 形态凭据经官方 MCP 端点 https://mcp.qixin.com/mcp 实测返回 401「OAuth access token 无效」，未采用、未落盘、未进入任何产物；当前数据由 WorkBuddy 已连接的启信慧眼连接器（OAuth 托管鉴权）在会话侧获取"
+  },
+  "fieldLabels": {
+    "creditCode": "统一社会信用代码",
+    "orgNature": "主体性质",
+    "belongOrg": "登记管理／隶属机关",
+    "approvalDept": "举办／审批单位",
+    "funding": "经费来源",
+    "capital": "开办资金",
+    "purpose": "宗旨和业务范围",
+    "certPeriod": "事业单位证书有效期",
+    "startDate": "登记成立日期",
+    "status": "主体状态",
+    "district": "行政区划",
+    "address": "登记办公地址",
+    "addressDate": "地址登记时点",
+    "websites": "官方网站／政务系统",
+    "historyNames": "历史名称",
+    "brief": "机构简介"
+  },
+  "sourceRefs": {
+    "qixin_dd": {"api_ref": "cn_customer_due_diligence", "label": "客户信息尽调（基础档案／区划／标签／坐标／联系方式）"},
+    "qixin_face": {"api_ref": "cn_company_registration_face", "label": "工商照面"},
+    "qixin_pi": {"api_ref": "cn_public_institution_info", "label": "事业单位基本信息"},
+    "qixin_profile": {"api_ref": "cn_company_profile", "label": "企业简介"},
+    "qixin_resolve": {"api_ref": "enterprise_resolve", "label": "企业主体解析"}
+  },
+  "orgs": [
+    {
+      "id": "fz-mzj",
+      "name": "福州市民族与宗教事务局",
+      "aliases": ["福州市民宗局", "市民宗局", "福州民宗局", "市民族宗教局", "福州市民族宗教事务局", "市民族与宗教事务局"],
+      "fields": {
+        "creditCode": {"v": "113501007380396651", "s": "verified", "src": ["qixin_dd", "qixin_face"]},
+        "orgNature": {"v": "机关", "s": "verified", "src": ["qixin_face"]},
+        "belongOrg": {"v": "福州市事业单位登记管理局", "s": "verified", "src": ["qixin_dd"]},
+        "status": {"v": "存续", "s": "verified", "src": ["qixin_dd"]},
+        "district": {"v": "福建省 / 福州市 / 鼓楼区", "s": "verified", "src": ["qixin_dd"]},
+        "address": {"v": "福建省福州市鼓楼区福飞路湖前井尾5号市委统战大楼4层", "s": "verified", "src": ["qixin_face"]},
+        "addressDate": {"v": "2022-08-04", "s": "verified", "src": ["qixin_dd"]}
+      },
+      "tags": ["机关", "东南沿海"],
+      "geo": {"lng": 119.30304997054, "lat": 26.123468980976, "s": "verified", "src": "qixin_dd"},
+      "sources": ["qixin_resolve", "qixin_dd", "qixin_face"]
+    },
+    {
+      "id": "fj-czt",
+      "name": "福建省财政厅",
+      "aliases": ["省财政厅", "福建省财政", "福建财政厅", "福建省人民政府财政厅"],
+      "fields": {
+        "creditCode": {"v": "11350000003591213N", "s": "verified", "src": ["qixin_resolve", "qixin_dd"]},
+        "orgNature": {"v": "机关", "s": "verified", "src": ["qixin_dd"]},
+        "belongOrg": {"v": "福建省人民政府", "s": "verified", "src": ["qixin_dd"]},
+        "startDate": {"v": "2018-10-23", "s": "verified", "src": ["qixin_dd"]},
+        "status": {"v": "存续", "s": "verified", "src": ["qixin_dd"]},
+        "district": {"v": "福建省 / 福州市 / 鼓楼区", "s": "verified", "src": ["qixin_dd"]},
+        "address": {"v": "福州市鼓楼区中山路5号", "s": "verified", "src": ["qixin_dd"]},
+        "addressDate": {"v": "2021-01-24", "s": "verified", "src": ["qixin_dd"]},
+        "websites": {"v": "czt.fujian.gov.cn；福建政府采购网.政务；福建省财政厅.政务", "s": "verified", "src": ["qixin_dd"]}
+      },
+      "tags": ["机关", "东南沿海"],
+      "geo": {"lng": 119.30835590187, "lat": 26.098984198453, "s": "verified", "src": "qixin_dd"},
+      "sources": ["qixin_resolve", "qixin_dd"]
+    },
+    {
+      "id": "fzu",
+      "name": "福州大学",
+      "aliases": ["福大", "FZU", "福州大学旗山校区", "福州大学（旗山校区）"],
+      "fields": {
+        "creditCode": {"v": "12350000488002092Y", "s": "verified", "src": ["qixin_resolve", "qixin_pi", "qixin_dd"]},
+        "orgNature": {"v": "事业单位", "s": "verified", "src": ["qixin_pi", "qixin_dd"]},
+        "belongOrg": {"v": "福建省事业单位登记管理局", "s": "verified", "src": ["qixin_pi", "qixin_dd"]},
+        "approvalDept": {"v": "福建省人民政府", "s": "verified", "src": ["qixin_pi"]},
+        "funding": {"v": "财政核拨", "s": "verified", "src": ["qixin_pi"]},
+        "capital": {"v": "465901 万元", "s": "verified", "src": ["qixin_pi"]},
+        "purpose": {"v": "承担教学、科研开发任务；培养综合类高级人才。", "s": "verified", "src": ["qixin_pi", "qixin_dd"]},
+        "certPeriod": {"v": "2026-06-08 至 2031-06-07", "s": "verified", "src": ["qixin_pi"]},
+        "status": {"v": "正常（存续）", "s": "verified", "src": ["qixin_pi", "qixin_dd"]},
+        "district": {"v": "福建省 / 福州市 / 闽侯县", "s": "verified", "src": ["qixin_dd"]},
+        "address": {"v": "福建省福州市福州大学城乌龙江北大道2号", "s": "verified", "src": ["qixin_dd"]},
+        "addressDate": {"v": "2025-06-11", "s": "verified", "src": ["qixin_dd"]},
+        "websites": {"v": "fzu.edu.cn；福州大学.公益", "s": "verified", "src": ["qixin_dd"]},
+        "brief": {"v": "福州大学是一家综合性高等教育机构，致力于培养高级人才和推动科研创新。学校在能源与环境技术领域拥有多项专利，如氨分解制氢装置的冷排供电平衡系统、壳聚糖-多金属氧酸盐复合膜等。", "s": "verified", "src": ["qixin_profile", "qixin_dd"]}
+      },
+      "tags": ["事业单位", "普通高等学校", "双一流大学", "211大学"],
+      "geo": {"lng": 119.19833234135, "lat": 26.065522035988, "s": "verified", "src": "qixin_dd"},
+      "sources": ["qixin_resolve", "qixin_dd", "qixin_pi", "qixin_profile"]
+    },
+    {
+      "id": "pbc-fj",
+      "name": "中国人民银行福建省分行",
+      "aliases": ["人民银行福建省分行", "福建省人行", "人行福建省分行", "中国人民银行福州中心支行", "央行福建省分行", "福建省人民银行", "中国人民银行福建省分行（国家外汇管理局福建省分局）"],
+      "fields": {
+        "creditCode": {"v": "11350000K17707470C", "s": "verified", "src": ["qixin_resolve", "qixin_dd"]},
+        "orgNature": {"v": "机关", "s": "verified", "src": ["qixin_dd"]},
+        "belongOrg": {"v": "福建省事业单位登记管理局", "s": "verified", "src": ["qixin_dd"]},
+        "status": {"v": "存续", "s": "verified", "src": ["qixin_dd"]},
+        "district": {"v": "福建省 / 福州市 / 鼓楼区", "s": "verified", "src": ["qixin_dd"]},
+        "address": {"v": "福建省福州市鼓楼区五四路220号", "s": "verified", "src": ["qixin_dd"]},
+        "addressDate": {"v": "2022-11-09", "s": "verified", "src": ["qixin_dd"]},
+        "historyNames": {"v": "中国人民银行福州中心支行；中国人民银行福州中心支行（国家外汇管理局福建省分局）", "s": "verified", "src": ["qixin_dd"]}
+      },
+      "tags": ["机关", "东南沿海", "行业标准起草单位"],
+      "geo": {"lng": 119.3124401377, "lat": 26.105511368962, "s": "verified", "src": "qixin_dd"},
+      "sources": ["qixin_resolve", "qixin_dd"]
+    },
+    {
+      "id": "fj-jyt",
+      "name": "福建省教育厅",
+      "aliases": ["省教育厅", "福建教育厅", "福建教厅"],
+      "fields": {
+        "creditCode": {"v": "113500000035911333", "s": "verified", "src": ["qixin_resolve", "qixin_dd"]},
+        "orgNature": {"v": "机关", "s": "verified", "src": ["qixin_dd"]},
+        "belongOrg": {"v": "中共福建省委", "s": "verified", "src": ["qixin_dd"]},
+        "startDate": {"v": "2018-04-18", "s": "verified", "src": ["qixin_dd"]},
+        "status": {"v": "存续", "s": "verified", "src": ["qixin_dd"]},
+        "district": {"v": "福建省 / 福州市 / 鼓楼区", "s": "verified", "src": ["qixin_dd"]},
+        "address": {"v": "福建省福州市鼓楼区鼓屏路162号", "s": "verified", "src": ["qixin_dd"]},
+        "addressDate": {"v": "2020-04-02", "s": "verified", "src": ["qixin_dd"]},
+        "websites": {"v": "jyt.fujian.gov.cn；福建省教育厅.政务", "s": "verified", "src": ["qixin_dd"]}
+      },
+      "tags": ["机关", "东南沿海", "地方标准起草单位"],
+      "geo": {"lng": 119.30285881113, "lat": 26.104314182184, "s": "verified", "src": "qixin_dd"},
+      "sources": ["qixin_resolve", "qixin_dd"]
+    },
+    {
+      "id": "wz-lc-czj",
+      "name": "温州市鹿城区财政局",
+      "aliases": ["鹿城区财政局", "温州鹿城财政局", "温州市鹿城区财政局（温州市鹿城区人民政府国有资产监督管理办公室）"],
+      "fields": {
+        "creditCode": {"v": "113303020025232430", "s": "verified", "src": ["qixin_resolve", "qixin_dd"]},
+        "orgNature": {"v": "未公示", "s": "unverified", "src": ["qixin_dd"], "note": "启信慧眼主体性质字段未公示；其机构属性标签含「机关」，此处不作推断"},
+        "status": {"v": "存续", "s": "verified", "src": ["qixin_dd"]},
+        "district": {"v": "浙江省 / 温州市 / 鹿城区", "s": "verified", "src": ["qixin_dd"]},
+        "address": {"v": "温州市鹿城区江滨西路552号", "s": "verified", "src": ["qixin_dd"]},
+        "addressDate": {"v": "2021-01-27", "s": "verified", "src": ["qixin_dd"]},
+        "historyNames": {"v": "温州市鹿城区财政局", "s": "verified", "src": ["qixin_dd"]}
+      },
+      "tags": ["机关", "长三角"],
+      "geo": {"lng": 120.67236104371, "lat": 28.026396981929, "s": "verified", "src": "qixin_dd"},
+      "sources": ["qixin_resolve", "qixin_dd"]
+    },
+    {
+      "id": "fz-gl-jyj",
+      "name": "福州市鼓楼区教育局",
+      "aliases": ["鼓楼区教育局", "福州鼓楼教育局"],
+      "fields": {
+        "creditCode": {"v": "113501020036095672", "s": "verified", "src": ["qixin_resolve", "qixin_dd"]},
+        "orgNature": {"v": "机关", "s": "verified", "src": ["qixin_dd"]},
+        "belongOrg": {"v": "鼓楼区事业单位登记管理局", "s": "verified", "src": ["qixin_dd"]},
+        "status": {"v": "存续", "s": "verified", "src": ["qixin_dd"]},
+        "district": {"v": "福建省 / 福州市 / 鼓楼区", "s": "verified", "src": ["qixin_dd"]},
+        "address": {"v": "福州市津泰路146号", "s": "verified", "src": ["qixin_dd"]},
+        "addressDate": {"v": "2020-11-04", "s": "verified", "src": ["qixin_dd"]}
+      },
+      "tags": ["机关", "东南沿海"],
+      "geo": {"lng": 119.31181815096, "lat": 26.088224850143, "s": "verified", "src": "qixin_dd"},
+      "sources": ["qixin_resolve", "qixin_dd"]
+    },
+    {
+      "id": "fz-tj-mzj",
+      "name": "福州市台江区民政局",
+      "aliases": ["台江区民政局", "福州台江民政局"],
+      "fields": {
+        "creditCode": {"v": "11350103003616484M", "s": "verified", "src": ["qixin_resolve", "qixin_dd"]},
+        "orgNature": {"v": "机关", "s": "verified", "src": ["qixin_dd"]},
+        "belongOrg": {"v": "台江区事业单位登记管理局", "s": "verified", "src": ["qixin_dd"]},
+        "status": {"v": "存续", "s": "verified", "src": ["qixin_dd"]},
+        "district": {"v": "福建省 / 福州市 / 台江区", "s": "verified", "src": ["qixin_dd"]},
+        "address": {"v": "福建省福州市台江区广达路349号", "s": "verified", "src": ["qixin_dd"]},
+        "addressDate": {"v": "2020-11-03", "s": "verified", "src": ["qixin_dd"]}
+      },
+      "tags": ["机关", "东南沿海"],
+      "geo": {"lng": 119.31533618483, "lat": 26.068319958746, "s": "verified", "src": "qixin_dd"},
+      "sources": ["qixin_resolve", "qixin_dd"]
+    }
+  ]
+}
