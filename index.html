@@ -85,6 +85,19 @@
     .profile-box .pb__k{flex:0 0 96px;color:#5b6b8c;font-size:12.5px}
     .profile-box .pb__v{flex:1;font-weight:600;color:#14264d}
     .profile-box .pb__foot{margin-top:8px;font-size:12px;color:#7a8aa9}
+
+    /* 机构名称实时联想下拉 */
+    .sug-wrap{position:relative}
+    .sug-list{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;
+      background:#fff;border:1px solid #d3e0f5;border-radius:12px;padding:5px;max-height:270px;overflow-y:auto;
+      box-shadow:0 12px 34px rgba(13,71,161,.16)}
+    .sug-list.show{display:block}
+    .sug-item{padding:9px 11px;border-radius:9px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+    .sug-item:hover,.sug-item.active{background:#eef3fb}
+    .sug-item__n{font-size:14px;font-weight:600;color:#14264d;line-height:1.35;word-break:break-all}
+    .sug-item__d{font-size:12px;color:#6b7a99;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sug-item__tag{font-size:11px;color:#0b5f9e;font-weight:600}
+    .sug-hint{padding:7px 11px 5px;font-size:11.5px;color:#8b98b2;border-bottom:1px solid #eef2f9;margin-bottom:3px}
     .badge-link:hover{color:#0837c4}
     .orgbadge b{color:#13683a}
 
@@ -276,7 +289,6 @@
         <div class="top__title">福建海峡银行最近网点查询</div>
       </div>
       <p class="top__sub">输入机构名称（模糊即可），自动匹配距离最近的福建海峡银行网点。福建全省及浙江温州适用。</p>
-      <div class="top__badge"><span class="dot"></span>已收录 91 家网点 · 直线距离估算</div>
     </header>
 
     <main class="body">
@@ -284,8 +296,11 @@
       <section class="card">
         <div class="card__h"><span class="bar"></span><h2>机构名称查询</h2></div>
 
-        <label class="fld" for="orgName">机构名称 <span class="opt">（模糊输入即可，如：福建省财政厅）</span></label>
-        <input id="orgName" class="inp" type="text" placeholder="如：福建省财政厅 / 福州市教育局" maxlength="50">
+        <label class="fld" for="orgName">机构名称 <span class="opt">（边输入边提示相近机构，可点选）</span></label>
+        <div class="sug-wrap">
+          <input id="orgName" class="inp" type="text" autocomplete="off" placeholder="如：福建省财政厅 / 福州市教育局" maxlength="50">
+          <div class="sug-list" id="sugList"></div>
+        </div>
 
         <div class="btn-row">
           <button class="btn btn-primary" id="searchBtn">🔍 查询</button>
@@ -1837,6 +1852,9 @@
     // /api/profile 取启信慧眼单位画像；留空则使用同源相对路径（主链接 Web 渲染，后端直供）。
     // 两种方式均不向前端暴露任何 Key（启信慧眼 Key 仅服务端持有），亦不直连商业数据域名。
     var PROFILE_PROXY = "https://fjhx-branch-distance.app.workbuddy.host/api/profile?sharecode=RTP3JR7MH6&name=";
+    // 机构名称联想跨域代理 URL（构建时注入）：非空时静态版经该 URL 调主链接后端 /api/suggest
+    // 取高德实时相近机构名；留空则使用同源相对路径（主链接 Web 渲染）。两者均前端零 Key。
+    var SUGGEST_PROXY = "https://fjhx-branch-distance.app.workbuddy.host/api/suggest?sharecode=RTP3JR7MH6&name=";
     // 由跨域代理 URL 推导「完整版（实时定位）」主页，用于实时定位通道不可用时的自愈跳转。
     // 主链接（同源）GEO_PROXY 为空 → BACKEND_HOME 为空 → 不渲染自愈入口。
     var BACKEND_HOME = (function(){
@@ -1991,7 +2009,116 @@
       if(BACKEND_URL){ doBackendSearch(name); return; }
       doIntelSearch(name);
     });
-    orgNameInput.addEventListener("keydown",function(e){ if(e.key==="Enter"){ searchBtn.click(); } });
+    // ===== 机构名称实时联想（2026-11-08）=====
+    // 双来源：① 构建时内联的已核验机构名/别名（零网络，限流或后端不可达时仍可用）；
+    //        ② 后端 /api/suggest 经高德 place/text 取省内真实相近机构名（Key 仅服务端持有）。
+    // 静态托管版经 SUGGEST_PROXY 跨域代理，主链接走同源相对路径；前端始终零 Key、不直连地图域名。
+    var LOCAL_SUGGEST = [{"n":"福州市民族与宗教事务局","a":["福州市民宗局","市民宗局","福州民宗局","市民族宗教局","福州市民族宗教事务局","市民族与宗教事务局"]},{"n":"福建省财政厅","a":["省财政厅","福建省财政","福建财政厅","福建省人民政府财政厅"]},{"n":"福州大学","a":["福大","FZU","福州大学旗山校区","福州大学（旗山校区）"]},{"n":"中国人民银行福建省分行","a":["人民银行福建省分行","福建省人行","人行福建省分行","中国人民银行福州中心支行","央行福建省分行","福建省人民银行","中国人民银行福建省分行（国家外汇管理局福建省分局）"]},{"n":"福建省教育厅","a":["省教育厅","福建教育厅","福建教厅"]},{"n":"温州市鹿城区财政局","a":["鹿城区财政局","温州鹿城财政局","温州市鹿城区财政局（温州市鹿城区人民政府国有资产监督管理办公室）"]},{"n":"福州市鼓楼区教育局","a":["鼓楼区教育局","福州鼓楼教育局"]},{"n":"福州市台江区民政局","a":["台江区民政局","福州台江民政局"]}];
+    var sugList=$("sugList"), sugWrap=orgNameInput.parentNode;
+    var sugItems=[], sugIndex=-1, sugToken=0, sugTimer=null, sugCtrl=null;
+
+    function hideSug(){
+      if(sugTimer){ clearTimeout(sugTimer); sugTimer=null; }
+      sugItems=[]; sugIndex=-1;
+      sugList.classList.remove("show"); sugList.innerHTML="";
+    }
+    function localSuggest(q){
+      var qc=String(q||"").replace(/\s+/g,""), out=[];
+      if(qc.length<2) return out;
+      LOCAL_SUGGEST.forEach(function(o){
+        var hit=o.n.indexOf(qc)>=0, a=o.a||[];
+        for(var i=0;!hit&&i<a.length;i++){ if(a[i].indexOf(qc)>=0) hit=true; }
+        if(hit) out.push({name:o.n,address:"",district:"",local:true});
+      });
+      return out;
+    }
+    function mergeSug(remote){
+      var seen={}, out=[];
+      localSuggest(orgNameInput.value.trim()).forEach(function(x){
+        if(!seen[x.name]){ seen[x.name]=1; out.push(x); }
+      });
+      (remote||[]).forEach(function(x){
+        if(x && x.name && !seen[x.name]){ seen[x.name]=1; out.push(x); }
+      });
+      return out.slice(0,8);
+    }
+    function renderSug(list, note){
+      sugItems=list||[]; sugIndex=-1;
+      if(!sugItems.length){ sugList.classList.remove("show"); sugList.innerHTML=""; return; }
+      var h='<div class="sug-hint">'+esc(note||"相近机构名称 · 点击直接查询")+'</div>';
+      sugItems.forEach(function(x,i){
+        var sub=x.local ? "本行已核验资料库 · 规范机构全称"
+                        : ((x.district?esc(x.district)+" · ":"")+esc(x.address||"公开地图相近机构"));
+        h+='<div class="sug-item" data-i="'+i+'"><div class="sug-item__n">'+esc(x.name)+
+           (x.local?' <span class="sug-item__tag">已核验</span>':'')+'</div>'+
+           '<div class="sug-item__d">'+sub+'</div></div>';
+      });
+      sugList.innerHTML=h;
+      sugList.classList.add("show");
+    }
+    function moveSug(d){
+      if(!sugItems.length) return;
+      sugIndex=(sugIndex+d+sugItems.length)%sugItems.length;
+      var nodes=sugList.querySelectorAll(".sug-item");
+      for(var i=0;i<nodes.length;i++) nodes[i].classList.toggle("active",i===sugIndex);
+      if(nodes[sugIndex] && nodes[sugIndex].scrollIntoView) nodes[sugIndex].scrollIntoView({block:"nearest"});
+    }
+    function chooseSug(i){
+      var x=sugItems[i]; if(!x) return;
+      sugToken++;
+      orgNameInput.value=x.name;
+      hideSug();
+      searchBtn.click();          // 选中即回填并直接查询最近网点
+    }
+    function runSug(){
+      var q=orgNameInput.value.trim();
+      if(q.length<2){ hideSug(); return; }
+      var my=++sugToken;
+      renderSug(localSuggest(q), "本行已核验资料库 · 正在检索公开地图…");  // 本地候选即时可见
+      var url=SUGGEST_PROXY ? (SUGGEST_PROXY+encodeURIComponent(q))
+                            : ("api/suggest?name="+encodeURIComponent(q));
+      if(sugCtrl){ try{ sugCtrl.abort(); }catch(e){} }
+      sugCtrl=(typeof AbortController!=="undefined")?new AbortController():null;
+      var opt=sugCtrl?{signal:sugCtrl.signal,headers:{"Accept":"application/json"}}
+                     :{headers:{"Accept":"application/json"}};
+      fetch(url,opt)
+        .then(function(r){ return (r && r.ok) ? r.json() : null; })
+        .then(function(j){
+          if(my!==sugToken) return;
+          var remote=(j && j.found && j.suggestions) ? j.suggestions : [];
+          renderSug(mergeSug(remote),
+            remote.length ? "相近机构名称 · 高德地图实时检索" : "本行已核验资料库（实时检索暂不可用）");
+        })
+        .catch(function(){ /* 网络异常/取消：保留已展示的本地候选，不弹错、不伪造 */ });
+    }
+    orgNameInput.addEventListener("input",function(){
+      if(sugTimer) clearTimeout(sugTimer);
+      sugToken++;                                  // 作废上一条在途请求
+      sugTimer=setTimeout(runSug,320);            // 防抖，避免逐字触发上游限流
+    });
+    orgNameInput.addEventListener("keydown",function(e){
+      if(e.key==="ArrowDown"){ if(sugItems.length){ e.preventDefault(); moveSug(1); } return; }
+      if(e.key==="ArrowUp"){ if(sugItems.length){ e.preventDefault(); moveSug(-1); } return; }
+      if(e.key==="Escape"){ hideSug(); return; }
+      if(e.key==="Enter"){
+        e.preventDefault();
+        if(sugItems.length && sugIndex>=0){ chooseSug(sugIndex); return; }
+        sugToken++; hideSug(); searchBtn.click();
+      }
+    });
+    sugList.addEventListener("mousedown",function(e){
+      var node=e.target, item=null;
+      while(node && node!==sugList){
+        if(node.classList && node.classList.contains("sug-item")){ item=node; break; }
+        node=node.parentNode;
+      }
+      if(item){ e.preventDefault(); chooseSug(Number(item.getAttribute("data-i"))); }
+    });
+    document.addEventListener("click",function(e){
+      if(sugWrap && !sugWrap.contains(e.target)) hideSug();
+    });
+    searchBtn.addEventListener("click",function(){ sugToken++; hideSug(); });
+    refreshBtn.addEventListener("click",function(){ sugToken++; hideSug(); });
 
     function doBackendSearch(name){
       resultTip.className="tip"; resultTip.textContent="正在实时查询「"+name+"」的机构信息…";
@@ -2322,12 +2449,6 @@
       backendStatus.textContent=v?"已保存自定义后端地址；留空则使用同源实时定位服务（前端零 Key）。":"已清除，恢复同源实时定位服务；无后端时自动降级为行政区划中心近似。";
     });
 
-    // 顶部徽标随资料库规模动态生成，避免静态文案与实际数据漂移
-    (function(){
-      var badge=document.querySelector(".top__badge");
-      if(badge) badge.innerHTML='<span class="dot"></span>已收录 '+BRANCHES.length+' 家网点 · '+
-        (((window.ORG_INTEL||{}).orgs)||[]).length+' 家核验机构 · 前端零 Key';
-    })();
   })();
   </script>
 </body>
