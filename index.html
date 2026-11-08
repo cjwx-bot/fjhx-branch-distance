@@ -1819,6 +1819,9 @@
     // ② 同源后端 /api/geo 代理的高德地图 POI 真实坐标（Key 仅服务端持有，前端零 Key）
     // ③ 行政区划中心近似（后端不可用 / 未配置 / 未命中时，如实标注）
     // 页面始终不携带任何地图 Key、不直连任何地图域名；定位来源逐次如实标注。
+    // 跨域代理 URL（构建时注入）：非空时查询阶段经该 URL 调主链接后端 /api/geo 取真实坐标；
+    // 留空则使用同源相对路径（主链接Web渲染）。两种方式均不向前端暴露任何地图 Key。
+    var GEO_PROXY = "https://fjhx-branch-distance.app.workbuddy.host/api/geo?sharecode=RTP3JR7MH6&name=";
     var geoToken = 0;
 
     function runLocalSearch(geoNote){
@@ -1867,7 +1870,8 @@
       var ctrl=(typeof AbortController!=="undefined")?new AbortController():null;
       var timer=setTimeout(function(){ try{ if(ctrl) ctrl.abort(); }catch(e){} },4500);
       var opt=ctrl?{signal:ctrl.signal,headers:{"Accept":"application/json"}}:{headers:{"Accept":"application/json"}};
-      fetch("api/geo?name="+encodeURIComponent(name),opt)
+      var geoUrl = GEO_PROXY ? (GEO_PROXY + encodeURIComponent(name)) : ("api/geo?name="+encodeURIComponent(name));
+      fetch(geoUrl,opt)
         .then(function(r){ if(!r.ok) throw new Error("HTTP-"+r.status); return r.json(); })
         .then(function(j){
           clearTimeout(timer);
