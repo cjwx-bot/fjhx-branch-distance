@@ -21,6 +21,11 @@ INTEL_DATA, INTEL_STATS = load_validated()
 write_report(INTEL_DATA, INTEL_STATS)
 ORG_INTEL_JS = json.dumps(INTEL_DATA, ensure_ascii=False, separators=(",", ":"))
 
+# 静态版跨域代理：构建时注入 GEO_PROXY_URL，则查询阶段经该 URL 调主链接后端 /api/geo
+# 获取真实高德坐标（密钥仍仅在服务端，前端零 Key 不变）。主链接（同源）留空，使用相对路径。
+# 例：https://fjhx-branch-distance.app.workbuddy.host/api/geo?sharecode=RTP3JR7MH6&name=
+GEO_PROXY_URL = os.environ.get("GEO_PROXY_URL", "").strip()
+
 # 参阅材料 CSS：规范固化自 fjhx-doc-pipeline/references/style-guide.md
 # （深蓝 #0D47A1 / 中蓝 #1976D2 / 浅蓝底 #eef3fb，微软雅黑，A4 12mm×13mm，
 #   cover 左侧竖条、章节标题下划线、kv-table 深蓝表头、note 虚线资料来源）
@@ -694,6 +699,9 @@ html = r"""<!DOCTYPE html>
     // ② 同源后端 /api/geo 代理的高德地图 POI 真实坐标（Key 仅服务端持有，前端零 Key）
     // ③ 行政区划中心近似（后端不可用 / 未配置 / 未命中时，如实标注）
     // 页面始终不携带任何地图 Key、不直连任何地图域名；定位来源逐次如实标注。
+    // 跨域代理 URL（构建时注入）：非空时查询阶段经该 URL 调主链接后端 /api/geo 取真实坐标；
+    // 留空则使用同源相对路径（主链接Web渲染）。两种方式均不向前端暴露任何地图 Key。
+    var GEO_PROXY = "__GEO_PROXY__";
     var geoToken = 0;
 
     function runLocalSearch(geoNote){
@@ -742,7 +750,8 @@ html = r"""<!DOCTYPE html>
       var ctrl=(typeof AbortController!=="undefined")?new AbortController():null;
       var timer=setTimeout(function(){ try{ if(ctrl) ctrl.abort(); }catch(e){} },4500);
       var opt=ctrl?{signal:ctrl.signal,headers:{"Accept":"application/json"}}:{headers:{"Accept":"application/json"}};
-      fetch("api/geo?name="+encodeURIComponent(name),opt)
+      var geoUrl = GEO_PROXY ? (GEO_PROXY + encodeURIComponent(name)) : ("api/geo?name="+encodeURIComponent(name));
+      fetch(geoUrl,opt)
         .then(function(r){ if(!r.ok) throw new Error("HTTP-"+r.status); return r.json(); })
         .then(function(j){
           clearTimeout(timer);
@@ -1151,6 +1160,7 @@ html = html.replace("__ICON_B64__", "data:image/png;base64," + ICON_B64)
 html = html.replace("__DOC_CSS_JS__", DOC_CSS_JS)
 html = html.replace("__DOC_CSS__", DOC_CSS)
 html = html.replace("__BRIEF_JS__", BRIEF_JS)
+html = html.replace("__GEO_PROXY__", GEO_PROXY_URL)
 # 强校验：构建产物不得残留任何占位符、地图 Key 变量或外部接口调用痕迹
 for _bad in ("__ORG_INTEL_JS__", "__MAP_KEY_EXPR__", "String.fromCharCode", "apis.map.qq.com", "restapi.amap.com"):
     assert _bad not in html, "构建产物残留禁止内容：" + _bad
