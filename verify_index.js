@@ -209,6 +209,13 @@ const stageChecks = {
                     html.indexOf('function showProfile(') >= 0 &&
                     html.indexOf('var pUrl = PROFILE_PROXY') >= 0 &&
                     html.indexOf('id="profileBox"') >= 0,
+  '机构名称实时联想已内联': html.indexOf('id="sugList"') >= 0 &&
+                    html.indexOf('var SUGGEST_PROXY =') >= 0 &&
+                    html.indexOf('var LOCAL_SUGGEST = [') >= 0 &&
+                    html.indexOf('function runSug(') >= 0 &&
+                    html.indexOf('function chooseSug(') >= 0 &&
+                    html.indexOf('api/suggest?name=') >= 0,
+  '顶部统计徽标已移除': html.indexOf('class="top__badge"') < 0,
   '刷新作废未完成请求': html.indexOf('geoToken++') >= 0,
   '无地图接口残留': html.indexOf('apis.map.qq.com') < 0 &&
                     html.indexOf('restapi.amap.com') < 0 &&
