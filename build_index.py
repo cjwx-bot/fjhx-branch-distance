@@ -26,6 +26,12 @@ ORG_INTEL_JS = json.dumps(INTEL_DATA, ensure_ascii=False, separators=(",", ":"))
 # 例：https://fjhx-branch-distance.app.workbuddy.host/api/geo?sharecode=RTP3JR7MH6&name=
 GEO_PROXY_URL = os.environ.get("GEO_PROXY_URL", "").strip()
 
+# 静态版单位画像跨域代理：构建时注入 PROFILE_PROXY_URL，则结果卡片与「编制参阅材料」
+# 均经该 URL 调主链接后端 /api/profile 取启信慧眼单位画像（凭据仍仅服务端）。
+# 主链接（同源）留空，使用相对路径 api/profile。留空时静态版自动降级为「未取得画像」并如实标注。
+# 例：https://fjhx-branch-distance.app.workbuddy.host/api/profile?sharecode=RTP3JR7MH6&name=
+PROFILE_PROXY_URL = os.environ.get("PROFILE_PROXY_URL", "").strip()
+
 # 参阅材料 CSS：规范固化自 fjhx-doc-pipeline/references/style-guide.md
 # （深蓝 #0D47A1 / 中蓝 #1976D2 / 浅蓝底 #eef3fb，微软雅黑，A4 12mm×13mm，
 #   cover 左侧竖条、章节标题下划线、kv-table 深蓝表头、note 虚线资料来源）
@@ -250,6 +256,13 @@ html = r"""<!DOCTYPE html>
     .orgbadge{display:none;background:var(--ok-soft);border:1px solid #c4e8d2;border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.6;color:#1c7a45;margin-bottom:12px;word-break:break-word}
     .orgbadge.badge-warn{background:#fff4e5;border-color:#f3c98b;color:#9a5b00}
     .badge-link{color:#0b5fff;text-decoration:underline;font-weight:600;cursor:pointer}
+    .profile-box{display:none;background:#f4f7ff;border:1px solid #c9d8ff;border-radius:13px;padding:12px 13px;margin-bottom:12px;font-size:13px;line-height:1.55;color:#1f3a73;word-break:break-word}
+    .profile-box .pb__head{font-weight:700;font-size:13px;margin-bottom:8px;color:#0b3aa0}
+    .profile-box .pb__rows{display:flex;flex-direction:column;gap:5px}
+    .profile-box .pb__row{display:flex;gap:10px;align-items:baseline}
+    .profile-box .pb__k{flex:0 0 96px;color:#5b6b8c;font-size:12.5px}
+    .profile-box .pb__v{flex:1;font-weight:600;color:#14264d}
+    .profile-box .pb__foot{margin-top:8px;font-size:12px;color:#7a8aa9}
     .badge-link:hover{color:#0837c4}
     .orgbadge b{color:#13683a}
 
@@ -421,6 +434,7 @@ html = r"""<!DOCTYPE html>
       <section class="card" id="resultCard">
         <div class="card__h"><span class="bar"></span><h2>查询结果</h2></div>
         <div class="orgbadge" id="orgBadge"></div>
+        <div class="profile-box" id="profileBox" style="display:none"></div>
         <div class="tip" id="resultTip">请输入机构名称后点击「查询」。</div>
         <div class="hero" id="hero"></div>
         <div class="list" id="resultList"></div>
@@ -451,7 +465,7 @@ html = r"""<!DOCTYPE html>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
           <li>本工具分两步：录入机构名称并点击「查询」即反馈最近网点；点击「编制并查看参阅材料」后显示五阶段进度，调取技能全网检索核验资料库、生成证据索引并组装十章 + 两附录的详细材料，完成后弹出全文。</li>
           <li>机构全称、性质、主要职能、内设机构、上级及下属单位与真实坐标，均由 WorkBuddy 会话侧技能全网检索公开渠道补齐、逐字段留痕后内置；页面不携带任何地图 Key、不直连地图域名。第三章按收录状态分别呈现已核验事实或如实标注的通用研判；负责人姓名按最小必要原则不在公开页面列示，可在「现场补录」回填。支持全屏浏览、复制与下载打印；位置与网点信息仅列于附录 A。</li>
-          <li>定位共三级：① 已收录机构用全网检索核验的真实坐标；② 未收录机构由同源后端代理取得高德地图 POI 真实坐标（密钥仅服务端持有）；③ 后端不可用、未配置密钥或地图未匹配时，按行政区划中心近似并逐次如实标注。静态托管环境（如 GitHub Pages）无同源后端，自动进入第③级。如需补齐机构事实，请在 WorkBuddy 会话中发起「全网检索补齐」；如需补齐单位画像，发起「画像补齐 &lt;机构全称&gt;」。</li>
+          <li>定位共三级：① 已收录机构用全网检索核验的真实坐标；② 未收录机构由后端代理取得高德地图 POI 真实坐标（密钥仅服务端持有；静态托管版经已授权跨域代理调用同一后端）；③ 后端不可用、未配置密钥或地图未匹配时，按行政区划中心近似并逐次如实标注。单位画像经后端 /api/profile 调取（凭据仍仅服务端），命中后在结果卡片与「参阅材料」中逐字段列示，未收录或通道不可用时如实标注、不伪造。如需补齐机构事实，请在 WorkBuddy 会话中发起「全网检索补齐」；如需补齐单位画像，发起「画像补齐 &lt;机构全称&gt;」。</li>
         </ul>
       </section>
     </main>
@@ -705,6 +719,10 @@ html = r"""<!DOCTYPE html>
     // 跨域代理 URL（构建时注入）：非空时查询阶段经该 URL 调主链接后端 /api/geo 取真实坐标；
     // 留空则使用同源相对路径（主链接Web渲染）。两种方式均不向前端暴露任何地图 Key。
     var GEO_PROXY = "__GEO_PROXY__";
+    // 单位画像跨域代理 URL（构建时注入）：非空时「编制参阅材料」与结果内联卡片经该 URL 调主链接后端
+    // /api/profile 取启信慧眼单位画像；留空则使用同源相对路径（主链接 Web 渲染，后端直供）。
+    // 两种方式均不向前端暴露任何 Key（启信慧眼 Key 仅服务端持有），亦不直连商业数据域名。
+    var PROFILE_PROXY = "__PROFILE_PROXY__";
     // 由跨域代理 URL 推导「完整版（实时定位）」主页，用于实时定位通道不可用时的自愈跳转。
     // 主链接（同源）GEO_PROXY 为空 → BACKEND_HOME 为空 → 不渲染自愈入口。
     var BACKEND_HOME = (function(){
@@ -744,6 +762,7 @@ html = r"""<!DOCTYPE html>
       lastQuery={name:name,mode:"approx",region:base,geo:null,intel:null,items:items,
         geoNote:why};
       renderResult(items, "该机构位置（近似测算）", "（"+approx+"）");
+      showProfile(name);
     }
 
     function geoReason(j){
@@ -798,6 +817,37 @@ html = r"""<!DOCTYPE html>
              source:g.source,provider:j.provider,verifiedAt:j.verifiedAt},
         intel:null,items:items,geoNote:""};
       renderResult(items, "该机构实时真实坐标（后端代理定位）", "");
+      showProfile(name);
+    }
+
+    // 单位画像内联卡片：经跨域代理 PROFILE_PROXY（静态托管）或同源 /api/profile（主链接）调取启信慧眼画像，
+    // 前端零 Key、不直连商业数据域名；未取得则不展示卡片。
+    var profToken = 0;
+    function showProfile(name){
+      var box=$("profileBox");
+      if(!box) return;
+      if(!name){ box.style.display="none"; return; }
+      var my=++profToken;
+      box.style.display="block";
+      box.innerHTML='<div class="pb__head">◌ 正在调取启信慧眼单位画像…</div>';
+      var url=PROFILE_PROXY ? (PROFILE_PROXY+encodeURIComponent(name)) : ("api/profile?name="+encodeURIComponent(name));
+      fetch(url,{cache:"no-store",headers:{"Accept":"application/json"}})
+        .then(function(r){ return (r && r.ok) ? r.json() : null; })
+        .then(function(j){
+          if(my!==profToken) return;
+          if(!j || !j.found || !j.profile){ box.style.display="none"; return; }
+          var p=j.profile, flds=p.fields||{}, labels=p.fieldLabels||{}, rows="";
+          Object.keys(labels).forEach(function(k){
+            var f=flds[k];
+            if(f && f.s==="verified" && f.v){
+              rows+='<div class="pb__row"><span class="pb__k">'+esc(labels[k])+'</span><span class="pb__v">'+esc(String(f.v))+'</span></div>';
+            }
+          });
+          box.innerHTML='<div class="pb__head">🏛 启信慧眼单位画像（'+esc(j.provider||"")+(j.verifiedAt?(" · "+esc(j.verifiedAt)+" 核验"):"")+'）</div>'+
+            (rows?('<div class="pb__rows">'+rows+'</div>'):'<div class="pb__row"><span class="pb__v">该单位已收录，但未公示可核验字段</span></div>')+
+            '<div class="pb__foot">完整字段与证据索引见「编制并查看参阅材料」。</div>';
+        })
+        .catch(function(){ if(my===profToken) box.style.display="none"; });
     }
 
     // —— ① 资料库命中：技能全网检索核验的真实坐标测算（零网络请求）——
@@ -818,6 +868,7 @@ html = r"""<!DOCTYPE html>
         geo:{title:o.name,address:intelFieldText(o.fields.address),lat:o.geo.lat,lng:o.geo.lng},
         intel:o,items:items,geoNote:""};
       renderResult(items, "该机构真实位置（技能全网检索核验坐标）", "");
+      showProfile(name);
     }
 
     searchBtn.addEventListener("click",function(){
@@ -978,7 +1029,7 @@ html = r"""<!DOCTYPE html>
     // 查询阶段只反馈最近网点（其间可由同源后端代理完成一次实时定位）；
     // 点击参阅材料按钮后启动本流水线，五阶段均为页面内真实计算：
     // 基准与资料库匹配 → 证据索引拼装 → 十章组装 → 排版渲染，
-    // 编制阶段仅向同源 /api/profile 调取单位画像（前端零凭据、不直连商业数据域名）；
+    // 编制阶段仅向后端 /api/profile 调取单位画像（静态版经跨域代理，前端零凭据、不直连商业数据域名）；
     // 通道不可用或未收录时如实降级，不伪装为已核验。其余章节为本地资料库与模板组装。
     function nowStr(){
       var d=new Date(), p=function(n){return (n<10?"0":"")+n;};
@@ -986,7 +1037,7 @@ html = r"""<!DOCTYPE html>
     }
     var BRIEF_STAGES=[
       {t:"读取网点基准与机构类别知识库", d:"官网公开网点目录 · 机构画像知识库", pct:14},
-      {t:"调取启信慧眼单位画像与核验资料库", d:"同源 /api/profile · 机构登记画像 · 逐字段核验状态", pct:40},
+      {t:"调取启信慧眼单位画像与核验资料库", d:"后端 /api/profile · 机构登记画像 · 逐字段核验状态", pct:40},
       {t:"生成证据索引与官方核验直达入口", d:"来源链接 · 口径差异 · 时点复核入口", pct:58},
       {t:"按十章体例组装参阅材料", d:"已核验事实 · 场景 · 方向 · 合规边界", pct:82},
       {t:"A4 排版渲染与密级标识校验", d:"行内参考 请勿外传", pct:100}
@@ -1041,14 +1092,16 @@ html = r"""<!DOCTYPE html>
       // ① 本地基准
       .then(function(){ stageStart(0); return sleepProg(230); })
       .then(function(){ if(!alive()) return; stageDone(0); return sleepProg(150); })
-      // ② 编制阶段真实调取启信慧眼单位画像（同源 /api/profile）+ 读取会话侧核验资料库
+      // ② 编制阶段真实调取启信慧眼单位画像（后端 /api/profile，静态版经跨域代理）+ 读取会话侧核验资料库
       .then(function(){
         if(!alive()) return null;
-        stageStart(1,"正在经同源 /api/profile 调取启信慧眼单位画像，并读取技能全网检索核验资料库…");
+        stageStart(1,"正在经后端 /api/profile 调取启信慧眼单位画像，并读取技能全网检索核验资料库…");
         q.intel = q.intel || lookupIntel(q.name) || null;
         var cov = q.intel ? intelCoverage(q.intel) : null;
+        var pUrl = PROFILE_PROXY ? (PROFILE_PROXY+encodeURIComponent(q.name||""))
+                                 : ("api/profile?name="+encodeURIComponent(q.name||""));
         var req = (typeof fetch==="function")
-          ? fetch("api/profile?name="+encodeURIComponent(q.name||""), {cache:"no-store"})
+          ? fetch(pUrl, {cache:"no-store"})
               .then(function(r){ return r.ok ? r.json() : null; })
               .catch(function(){ return null; })
           : Promise.resolve(null);
@@ -1178,8 +1231,10 @@ html = html.replace("__DOC_CSS_JS__", DOC_CSS_JS)
 html = html.replace("__DOC_CSS__", DOC_CSS)
 html = html.replace("__BRIEF_JS__", BRIEF_JS)
 html = html.replace("__GEO_PROXY__", GEO_PROXY_URL)
+html = html.replace("__PROFILE_PROXY__", PROFILE_PROXY_URL)
 # 强校验：构建产物不得残留任何占位符、地图 Key 变量或外部接口调用痕迹
-for _bad in ("__ORG_INTEL_JS__", "__MAP_KEY_EXPR__", "String.fromCharCode", "apis.map.qq.com", "restapi.amap.com"):
+for _bad in ("__ORG_INTEL_JS__", "__MAP_KEY_EXPR__", "__GEO_PROXY__", "__PROFILE_PROXY__",
+             "String.fromCharCode", "apis.map.qq.com", "restapi.amap.com"):
     assert _bad not in html, "构建产物残留禁止内容：" + _bad
 with open(out, "w", encoding="utf-8") as f:
     f.write(html)
