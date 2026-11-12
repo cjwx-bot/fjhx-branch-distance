@@ -267,6 +267,13 @@ const stageChecks = {
                     html.indexOf('__TILE_PROXY__') < 0 &&
                     html.indexOf('autonavi.com') < 0 && html.indexOf('gtimg.com') < 0 &&
                     html.indexOf('appmaptile') < 0,
+  '距离单位函数按入参区分(防同名覆盖)':
+                    html.indexOf('function fmtDist(m)') >= 0 &&
+                    html.indexOf('function fmtDistKm(km)') >= 0 &&
+                    html.indexOf('fmtDist(first.dist)') >= 0 &&
+                    html.indexOf('fmtDist(item.dist)') >= 0 &&
+                    html.indexOf('fmtDistKm(x.km)') >= 0 &&
+                    html.indexOf('function fmtDist(km)') < 0,
   '刷新作废未完成请求': html.indexOf('geoToken++') >= 0,
   '无地图接口残留': html.indexOf('apis.map.qq.com') < 0 &&
                     html.indexOf('restapi.amap.com') < 0 &&
