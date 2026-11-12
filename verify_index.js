@@ -216,6 +216,19 @@ const stageChecks = {
                     html.indexOf('function chooseSug(') >= 0 &&
                     html.indexOf('api/suggest?name=') >= 0,
   '顶部统计徽标已移除': html.indexOf('class="top__badge"') < 0,
+  '网点半径查询界面': html.indexOf('id="tabRadius"') >= 0 &&
+                    html.indexOf('id="branchName"') >= 0 &&
+                    html.indexOf('id="radiusKm"') >= 0 &&
+                    html.indexOf('id="radResultCard"') >= 0 &&
+                    html.indexOf('function setMode(m)') >= 0,
+  'DATA 分片索引与按需加载': html.indexOf('window.NEARBY_MANIFEST = {') >= 0 &&
+                    html.indexOf('nearby_data/c"+i+".js?v="+NEARBY_VER') >= 0 &&
+                    html.indexOf('boxHit(box,c.bbox)') >= 0 &&
+                    html.indexOf('__NEARBY_MANIFEST_JS__') < 0 &&
+                    html.indexOf('__NEARBY_VER__') < 0,
+  '半径结果口径如实标注': html.indexOf('资料库 DATA 文件夹') >= 0 &&
+                    html.indexOf('同址机构距离相同') >= 0 &&
+                    html.indexOf('仅供行内政务合作位置参考') >= 0,
   '刷新作废未完成请求': html.indexOf('geoToken++') >= 0,
   '无地图接口残留': html.indexOf('apis.map.qq.com') < 0 &&
                     html.indexOf('restapi.amap.com') < 0 &&
