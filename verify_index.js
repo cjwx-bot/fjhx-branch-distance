@@ -229,6 +229,44 @@ const stageChecks = {
   '半径结果口径如实标注': html.indexOf('资料库 DATA 文件夹') >= 0 &&
                     html.indexOf('同址机构距离相同') >= 0 &&
                     html.indexOf('仅供行内政务合作位置参考') >= 0,
+  '半径结果默认地图视图与类别着色': html.indexOf('id="radMapWrap"') >= 0 &&
+                    html.indexOf('id="radSvg"') >= 0 &&
+                    html.indexOf('id="radViewMap"') >= 0 &&
+                    html.indexOf('id="radViewList"') >= 0 &&
+                    html.indexOf('id="radPinInfo"') >= 0 &&
+                    html.indexOf('function renderRadMap()') >= 0 &&
+                    html.indexOf('function catColor(c)') >= 0 &&
+                    html.indexOf('function bucketColor(items)') >= 0 &&
+                    html.indexOf('#e05345') >= 0 && html.indexOf('#1a5bb8') >= 0 &&
+                    html.indexOf('#1f9d57') >= 0 && html.indexOf('#d98a12') >= 0 &&
+                    html.indexOf('class="rad-pin"') >= 0 &&
+                    html.indexOf('class="rad-cluster"') >= 0 &&
+                    html.indexOf('radView="map"; mapScale=1') >= 0 &&
+                    html.indexOf('街道底图 + 等距投影点位图层（局部近似对齐）') >= 0 &&
+                    html.indexOf('页面不直连任何地图域名、不携带地图 Key') >= 0,
+  '点击图钉弹出单位主要信息卡': html.indexOf('id="pinModal"') >= 0 &&
+                    html.indexOf('id="pinCard"') >= 0 &&
+                    html.indexOf('function openPinCard(x)') >= 0 &&
+                    html.indexOf('function openPinCluster(arr)') >= 0 &&
+                    html.indexOf('function closePinCard()') >= 0 &&
+                    html.indexOf('function pinInfoRows(x)') >= 0 &&
+                    html.indexOf('单位主要信息 · 公开登记口径') >= 0 &&
+                    html.indexOf('机构类别') >= 0 && html.indexOf('行政层级') >= 0 &&
+                    html.indexOf('登记地址') >= 0 && html.indexOf('直线距离') >= 0 &&
+                    html.indexOf('data-pi') >= 0 && html.indexOf('data-close') >= 0 &&
+                    html.indexOf('if(e.target===pinModal) closePinCard()') >= 0 &&
+                    html.indexOf('点击彩色小图钉即弹出「单位主要信息」卡') >= 0,
+  '街道底图同源瓦片代理': html.indexOf('var TILE_BASE =') >= 0 &&
+                    html.indexOf('id="radTiles"') >= 0 &&
+                    html.indexOf('id="radTileInner"') >= 0 &&
+                    html.indexOf('id="radMapLayer"') >= 0 &&
+                    html.indexOf('function renderTiles(o)') >= 0 &&
+                    html.indexOf('function tileHealth()') >= 0 &&
+                    html.indexOf('街道底图未就绪 · 已显示零依赖点位分布图') >= 0 &&
+                    html.indexOf('/api/tiles?') >= 0 &&
+                    html.indexOf('__TILE_PROXY__') < 0 &&
+                    html.indexOf('autonavi.com') < 0 && html.indexOf('gtimg.com') < 0 &&
+                    html.indexOf('appmaptile') < 0,
   '刷新作废未完成请求': html.indexOf('geoToken++') >= 0,
   '无地图接口残留': html.indexOf('apis.map.qq.com') < 0 &&
                     html.indexOf('restapi.amap.com') < 0 &&
