@@ -122,6 +122,10 @@ def main():
         hero = ev("document.getElementById('hero').innerText") or ""
         badge = ev("document.getElementById('orgBadge').innerText") or ""
         ck("查询反馈最近网点", "福建海峡银行" in hero, hero.replace("\n", " ")[:70])
+        # 回归：网点距离必须用「米/公里」中文单位，历史上曾因 fmtDist 同名被公里版覆盖而显示 "xx.xx km"
+        dist_txt = ev("(function(){var n=document.querySelector('#hero .hero__dist .n');return n?n.textContent:'';})()") or ""
+        ck("网点距离单位为米/公里(非km)",
+           ("米" in dist_txt or "公里" in dist_txt) and "km" not in dist_txt, dist_txt)
         ck("按资料库真实坐标测算", "福州华林支行" in hero, hero.replace("\n", " ")[:70])
         ck("命中技能核验资料库", "已命中技能全网检索核验资料库" in badge, badge[:90])
         ck("查询阶段材料为待编制", ev("document.getElementById('briefPill').textContent") == "待编制")
@@ -181,10 +185,17 @@ def main():
            "document.getElementById('refreshBtn').click();"
            "document.getElementById('orgName').value='鼓楼区某未收录单位';"
            "document.getElementById('searchBtn').click();true")
-        time.sleep(1.2)   # 同源 /api/geo 返回 404 后经 catch 降级
+        # 同源 /api/geo 可能返回 404 或超时（前端 4.5s abort），轮询等待降级渲染完成，避免中间态误判
+        for _ in range(30):
+            time.sleep(0.25)
+            b = ev("document.getElementById('orgBadge').innerText") or ""
+            if "正在调取实时真实坐标" not in b:
+                break
         badge2 = ev("document.getElementById('orgBadge').innerText") or ""
         hero2 = ev("document.getElementById('hero').innerText") or ""
-        ck("未收录机构如实提示", "资料库未收录" in badge2, badge2[:80])
+        ck("未收录机构如实提示",
+           ("实时高德地图定位未就绪" in badge2 or "资料库未收录" in badge2) and
+           ("行政区划中心近似" in badge2 or "降级" in badge2), badge2[:80])
         ck("未收录机构仍反馈近似网点", "福建海峡银行" in hero2, hero2.replace("\n", " ")[:70])
         ck("无后端时如实标注降级原因", "实时定位服务不可用" in badge2 or "行政区划中心近似" in badge2)
 
