@@ -97,6 +97,15 @@ DOC_CSS_JS = json.dumps(DOC_CSS, ensure_ascii=False)
 BASE = os.path.dirname(os.path.abspath(__file__))
 BRANCH_JSON = os.path.join(BASE, "server", "data", "branches.json")
 
+# 「网点辐射查询」数据索引：由 build_nearby_data.py 依据资料库 DATA 文件夹四份清单生成。
+# 索引内联于页面，43,526 家机构明细按地市分片为 nearby_data/cN.js，查询时按包围盒按需加载，
+# 不随页面一次性下载；分片均为纯静态公开登记信息，不含任何凭据。
+NEARBY_MANIFEST_JSON = os.path.join(BASE, "nearby_data", "manifest.json")
+with open(NEARBY_MANIFEST_JSON, "r", encoding="utf-8") as _f:
+    NEARBY_MANIFEST = json.load(_f)
+NEARBY_MANIFEST_JS = json.dumps(NEARBY_MANIFEST, ensure_ascii=False, separators=(",", ":"))
+NEARBY_VER = "20261112a"   # 数据重建后递增，用于分片 URL 绕缓存
+
 # 机构名称本地联想词库（2026-11-08）：公开级画像库 8 家 + 核验资料库 4 家的规范名与别名，
 # 构建时内联。后端联想限流/不可达时前端仍即时给出候选（零网络请求），且只给已核验主体、不伪造。
 def _local_suggest_payload():
@@ -302,6 +311,44 @@ html = r"""<!DOCTYPE html>
     .sug-item__d{font-size:12px;color:#6b7a99;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .sug-item__tag{font-size:11px;color:#0b5f9e;font-weight:600}
     .sug-hint{padding:7px 11px 5px;font-size:11.5px;color:#8b98b2;border-bottom:1px solid #eef2f9;margin-bottom:3px}
+
+    /* 模式切换与「网点辐射查询」 */
+    .mode-tabs{display:flex;gap:5px;padding:4px;background:#dfe9f7;border-radius:13px;margin-bottom:14px}
+    .mode-tab{flex:1;border:none;background:transparent;color:#4a6285;font-family:inherit;font-size:13.5px;font-weight:600;
+      padding:9px 6px;border-radius:10px;cursor:pointer;transition:.15s;line-height:1.35}
+    .mode-tab.on{background:#fff;color:var(--brand-deep);box-shadow:0 3px 10px rgba(15,63,134,.14)}
+    .rad-row{display:flex;gap:10px;align-items:flex-end}
+    .rad-row .rad-main{flex:1;min-width:0}
+    .rad-row .rad-side{flex:0 0 104px}
+    .rad-side .inp{padding:12px 9px;text-align:center}
+    .rad-unit{position:relative}
+    .rad-unit:after{content:"km";position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--ink-3);pointer-events:none}
+    .rad-stat{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0 10px}
+    .rad-stat__item{flex:1;min-width:74px;background:var(--brand-soft);border-radius:11px;padding:9px 6px;text-align:center}
+    .rad-stat__n{font-size:20px;font-weight:800;color:var(--brand-deep);line-height:1.2}
+    .rad-stat__t{font-size:11px;color:var(--ink-2);margin-top:2px}
+    .rad-filter{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
+    .rad-chip{border:1px solid var(--brand-line);background:#fff;color:var(--ink-2);border-radius:999px;
+      padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s}
+    .rad-chip.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+    .rad-mini{border:1.5px solid var(--line);background:#fbfdff;border-radius:9px;padding:6px 8px;
+      font-size:12px;color:var(--ink);font-family:inherit;outline:none;max-width:132px}
+    .rad-mini:focus{border-color:var(--brand)}
+    .rad-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+    .rad-item{border:1px solid var(--line);border-radius:11px;padding:10px 11px;background:#fbfdff}
+    .rad-item__top{display:flex;justify-content:space-between;gap:9px;align-items:baseline}
+    .rad-item__n{font-size:13.5px;font-weight:650;color:var(--ink);line-height:1.4;word-break:break-all}
+    .rad-item__d{font-size:12.5px;font-weight:700;color:var(--brand);white-space:nowrap}
+    .rad-item__meta{margin-top:5px;font-size:12px;color:var(--ink-2);line-height:1.55;word-break:break-all}
+    .rad-tag{display:inline-block;background:#e8f1ff;color:#0b4ea2;border-radius:5px;padding:1px 6px;font-size:11px;margin-right:5px}
+    .rad-tag.lv{background:#eaf7ee;color:#1c7a45}
+    .rad-pager{display:flex;justify-content:center;align-items:center;gap:11px;margin-top:12px;font-size:12.5px;color:var(--ink-2)}
+    .rad-pager button{border:1px solid var(--brand-line);background:#fff;color:var(--brand);border-radius:8px;
+      padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit}
+    .rad-pager button:disabled{opacity:.4;cursor:default}
+    .rad-note{margin-top:12px;font-size:11.5px;color:var(--ink-3);line-height:1.65;
+      background:#f7f9fc;border-radius:9px;padding:9px 10px}
+    .rad-loading{text-align:center;padding:18px 10px;font-size:13px;color:var(--ink-2)}
     .badge-link:hover{color:#0837c4}
     .orgbadge b{color:#13683a}
 
@@ -445,8 +492,13 @@ html = r"""<!DOCTYPE html>
     </header>
 
     <main class="body">
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab on" id="tabOrg" role="tab" aria-selected="true">机构查最近网点</button>
+        <button class="mode-tab" id="tabRadius" role="tab" aria-selected="false">网点半径内机构</button>
+      </div>
+
       <!-- 查询卡片 -->
-      <section class="card">
+      <section class="card" id="orgCard">
         <div class="card__h"><span class="bar"></span><h2>机构名称查询</h2></div>
 
         <label class="fld" for="orgName">机构名称 <span class="opt">（边输入边提示相近机构，可点选）</span></label>
@@ -496,10 +548,63 @@ html = r"""<!DOCTYPE html>
         </div>
       </section>
 
+      <!-- 网点辐射查询：录入卡片 -->
+      <section class="card" id="radiusCard" style="display:none">
+        <div class="card__h"><span class="bar"></span><h2>网点半径内机构查询</h2></div>
+
+        <label class="fld" for="branchName">本行网点名称 <span class="opt">（模糊录入后点选具体网点）</span></label>
+        <div class="sug-wrap">
+          <input id="branchName" class="inp" type="text" autocomplete="off" placeholder="如：鼓楼 / 三山 / 平潭" maxlength="50">
+          <div class="sug-list" id="branchSug"></div>
+        </div>
+        <div class="tip" id="branchPicked" style="display:none;margin-top:10px"></div>
+
+        <label class="fld" for="radiusKm" style="margin-top:14px">查询半径 <span class="opt">（以所选网点经纬度为圆心，0.1—50 公里）</span></label>
+        <div class="rad-row">
+          <div class="rad-main"><div class="tip">按经纬度直线距离测算，覆盖机关、事业单位、学校三类主体。</div></div>
+          <div class="rad-side rad-unit"><input id="radiusKm" class="inp" type="number" min="0.1" max="50" step="0.1" value="3" inputmode="decimal"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="radiusBtn">🔍 查询半径内机构</button>
+          <button class="btn btn-ghost" id="radiusReset">↻ 重置</button>
+        </div>
+      </section>
+
+      <!-- 网点辐射查询：结果卡片 -->
+      <section class="card" id="radResultCard" style="display:none">
+        <div class="card__h"><span class="bar"></span><h2>半径内机构清单</h2></div>
+        <div class="tip" id="radSummary">请选择本行网点并录入半径后查询。</div>
+        <div class="rad-stat" id="radStat" style="display:none"></div>
+        <div class="rad-filter" id="radFilter" style="display:none">
+          <button class="rad-chip on" data-cat="0">全部</button>
+          <button class="rad-chip" data-cat="1">机关</button>
+          <button class="rad-chip" data-cat="2">事业单位</button>
+          <button class="rad-chip" data-cat="4">学校</button>
+          <select class="rad-mini" id="radLevel">
+            <option value="">全部层级</option>
+            <option value="1">中央级</option>
+            <option value="2">省属</option>
+            <option value="3">市属</option>
+            <option value="4">区县属</option>
+            <option value="5">街镇属</option>
+            <option value="0">未标明</option>
+          </select>
+          <input class="rad-mini" id="radKeyword" type="text" placeholder="名称关键词" maxlength="30">
+        </div>
+        <div class="rad-list" id="radList"></div>
+        <div class="rad-pager" id="radPager" style="display:none">
+          <button id="radPrev">上一页</button><span id="radPageInfo"></span><button id="radNext">下一页</button>
+        </div>
+        <div class="rad-note" id="radNote" style="display:none"></div>
+      </section>
+
       <!-- 使用说明 -->
       <section class="card">
         <div class="card__h"><span class="bar"></span><h2>使用说明</h2></div>
         <ul class="notes">
+          <li>【网点半径内机构】切换顶部第二个模式，模糊录入本行网点名称并点选具体网点，再录入公里半径，即以该网点经纬度为圆心列出半径内的机关、事业单位、学校；数据来源为资料库 DATA 文件夹三份含经纬度整合清单（去重后 4.3 万余家主体，GCJ-02），按地市分片按需加载，页面不携带任何地图 Key 或商业数据凭据。</li>
+          <li>半径查询结果为经纬度直线距离估算，可按机构类别、行政层级与名称关键词筛选并分页；仅列示公开登记的机构名称、类别、层级、区划与登记地址。部分主体坐标为登记机关或区县中心级定位，同址机构距离相同，现场应用请以登记地址复核。</li>
           <li>适用对象：福建省内及浙江温州地区的党政机关、事业单位、群团组织。</li>
           <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
           <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合合规公开地图（GCJ-02）位置实测匹配留存。</li>
@@ -587,6 +692,8 @@ html = r"""<!DOCTYPE html>
     window.REGION_DATA = __REGION_JS__;
     window.PROVINCE_OF_CITY = __PROV_JS__;
     window.BRANCH_DATA = __BRANCH_DATA_JS__;
+    window.NEARBY_MANIFEST = __NEARBY_MANIFEST_JS__;
+    window.NEARBY_VER = "__NEARBY_VER__";
     // 技能全网检索核验资料库（构建时内联，前端零 Key）
     window.ORG_INTEL = __ORG_INTEL_JS__;
   </script>
@@ -1361,6 +1468,252 @@ html = r"""<!DOCTYPE html>
       backendStatus.textContent=v?"已保存自定义后端地址；留空则使用同源实时定位服务（前端零 Key）。":"已清除，恢复同源实时定位服务；无后端时自动降级为行政区划中心近似。";
     });
 
+    // ===== 网点半径内机构查询（2026-11-12）=====
+    // 数据源：资料库 DATA 文件夹三份含经纬度清单，由 build_nearby_data.py 去重后按地市分片。
+    // 前端按查询圆外接矩形与市域包围盒相交情况按需加载分片，本地完成测距与筛选，
+    // 不调用任何后端接口、不携带任何 Key 或凭据，静态托管与同源部署行为一致。
+    var MANIFEST = window.NEARBY_MANIFEST || {cities:[],total:0,catLabels:{},levelLabels:{}};
+    var NEARBY_VER = window.NEARBY_VER || "1";
+    var tabOrg=$("tabOrg"), tabRadius=$("tabRadius"),
+        branchInput=$("branchName"), branchSug=$("branchSug"), branchPicked=$("branchPicked"),
+        radiusInput=$("radiusKm"), radiusBtn=$("radiusBtn"), radiusReset=$("radiusReset"),
+        radSummary=$("radSummary"), radStat=$("radStat"), radFilter=$("radFilter"),
+        radList=$("radList"), radPager=$("radPager"), radPrev=$("radPrev"), radNext=$("radNext"),
+        radPageInfo=$("radPageInfo"), radNote=$("radNote"),
+        radLevel=$("radLevel"), radKeyword=$("radKeyword");
+
+    function setMode(m){
+      var isRad=(m==="radius");
+      tabOrg.classList.toggle("on",!isRad); tabRadius.classList.toggle("on",isRad);
+      tabOrg.setAttribute("aria-selected",isRad?"false":"true");
+      tabRadius.setAttribute("aria-selected",isRad?"true":"false");
+      $("orgCard").style.display=isRad?"none":"";
+      $("resultCard").style.display=isRad?"none":"";
+      $("radiusCard").style.display=isRad?"":"none";
+      $("radResultCard").style.display=isRad?"":"none";
+      var sub=document.querySelector(".top__sub");
+      if(sub) sub.textContent=isRad
+        ? "选择本行网点并录入公里半径，查询范围内机关、事业单位与学校。福建全省及浙江温州适用。"
+        : "输入机构名称（模糊即可），自动匹配距离最近的福建海峡银行网点。福建全省及浙江温州适用。";
+    }
+    tabOrg.addEventListener("click",function(){ setMode("org"); });
+    tabRadius.addEventListener("click",function(){ setMode("radius"); });
+
+    // —— 本行网点模糊联想：91 家权威网点本地匹配，零网络请求 ——
+    var pickedBranch=null, branchItems=[], branchActive=-1, branchTimer=null;
+    function hideBranchSug(){ branchSug.classList.remove("show"); branchActive=-1; }
+    function renderBranchSug(q){
+      var s=String(q).replace(/\\s+/g,"").toLowerCase();
+      var items=s ? BRANCHES.filter(function(b){
+        return [b.name,b.city,b.district,b.type,b.address].join(" ").toLowerCase().indexOf(s)>=0;
+      }).slice(0,8) : [];
+      branchItems=items;
+      if(!items.length){ hideBranchSug(); return; }
+      branchSug.innerHTML='<div class="sug-hint">本行网点资料库（共 '+BRANCHES.length+' 家，点选后作为圆心）</div>'+
+        items.map(function(b,i){
+          return '<div class="sug-item" data-i="'+i+'"><div class="sug-item__n">'+esc(b.name)+'</div>'+
+            '<div class="sug-item__d">'+esc(b.city+" · "+b.district)+'　'+esc(b.address)+'</div></div>';
+        }).join("");
+      branchSug.classList.add("show");
+    }
+    function pickBranch(i){
+      var b=branchItems[i]; if(!b) return;
+      pickedBranch=b; branchInput.value=b.name; hideBranchSug();
+      branchPicked.style.display="block";
+      branchPicked.innerHTML="已选圆心：<b>"+esc(b.name)+"</b>　"+esc(b.city+" · "+b.district)+
+        "<br>网点坐标："+Number(b.lat).toFixed(6)+", "+Number(b.lng).toFixed(6)+"（GCJ-02）";
+    }
+    branchInput.addEventListener("input",function(){
+      pickedBranch=null; branchPicked.style.display="none";
+      clearTimeout(branchTimer);
+      var q=branchInput.value.trim();
+      branchTimer=setTimeout(function(){ renderBranchSug(q); },160);
+    });
+    branchInput.addEventListener("keydown",function(e){
+      if(!branchSug.classList.contains("show")){
+        if(e.key==="Enter"){ e.preventDefault(); radiusBtn.click(); }
+        return;
+      }
+      if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+        e.preventDefault();
+        branchActive+=(e.key==="ArrowDown"?1:-1);
+        if(branchActive<0) branchActive=branchItems.length-1;
+        if(branchActive>=branchItems.length) branchActive=0;
+        Array.prototype.forEach.call(branchSug.querySelectorAll(".sug-item"),function(el,i){
+          el.classList.toggle("active",i===branchActive);
+        });
+      }else if(e.key==="Enter"){
+        e.preventDefault(); pickBranch(branchActive>=0?branchActive:0);
+      }else if(e.key==="Escape"){ hideBranchSug(); }
+    });
+    branchSug.addEventListener("mousedown",function(e){
+      var t=e.target;
+      while(t && t!==branchSug && !(t.classList&&t.classList.contains("sug-item"))) t=t.parentNode;
+      if(t && t!==branchSug){ e.preventDefault(); pickBranch(parseInt(t.getAttribute("data-i"),10)); }
+    });
+    document.addEventListener("click",function(e){
+      if($("radiusCard").contains(e.target)) return;
+      hideBranchSug();
+    });
+
+    // —— 分片按需加载 ——
+    window.NEARBY_CHUNK=window.NEARBY_CHUNK||{};
+    var chunkLoading={};
+    function loadChunk(i){
+      if(window.NEARBY_CHUNK[i]) return Promise.resolve(window.NEARBY_CHUNK[i]);
+      if(chunkLoading[i]) return chunkLoading[i];
+      chunkLoading[i]=new Promise(function(res,rej){
+        var s=document.createElement("script"), done=false;
+        var timer=setTimeout(function(){ if(!done){ done=true; drop(s); rej(new Error("timeout")); } },20000);
+        function drop(el){ if(el&&el.parentNode) el.parentNode.removeChild(el); }
+        s.src="nearby_data/c"+i+".js?v="+NEARBY_VER;
+        s.onload=function(){ if(done) return; done=true; clearTimeout(timer); res(window.NEARBY_CHUNK[i]||[]); };
+        s.onerror=function(){ if(done) return; done=true; clearTimeout(timer); drop(s); rej(new Error("load-failed")); };
+        document.head.appendChild(s);
+      });
+      return chunkLoading[i];
+    }
+    function bboxFor(lat,lng,km){
+      var dLat=km/111.32, cos=Math.max(0.2,Math.cos(lat*Math.PI/180)), dLng=km/(111.32*cos);
+      return [lat-dLat,lat+dLat,lng-dLng,lng+dLng];
+    }
+    function boxHit(a,b){ return a[0]<=b[1]&&a[1]>=b[0]&&a[2]<=b[3]&&a[3]>=b[2]; }
+
+    // —— 查询、筛选、分页 ——
+    var radAll=[], radShown=[], radPage=1, radCat=0, radCenter=null, radKm=0, radToken=0, radKwTimer=null;
+    var PAGE_SIZE=50;
+    function fmtDist(km){ return km<1 ? Math.round(km*1000)+" m" : km.toFixed(2)+" km"; }
+    function catNames(bit){
+      var a=[]; if(bit&1)a.push("机关"); if(bit&2)a.push("事业单位"); if(bit&4)a.push("学校");
+      return a.join("·")||"其他";
+    }
+    function setChipState(){
+      Array.prototype.forEach.call(radFilter.querySelectorAll(".rad-chip"),function(el){
+        el.classList.toggle("on",parseInt(el.getAttribute("data-cat"),10)===radCat);
+      });
+    }
+    function runRadius(){
+      var my=++radToken;
+      if(!pickedBranch){
+        radSummary.className="tip err";
+        radSummary.textContent="请先模糊录入网点名称，并在下拉列表中点选具体网点作为圆心。";
+        radList.innerHTML=""; return;
+      }
+      var km=parseFloat(radiusInput.value);
+      if(!isFinite(km)||km<0.1||km>50){
+        radSummary.className="tip err";
+        radSummary.textContent="请录入 0.1—50 之间的公里半径数字。";
+        radList.innerHTML=""; return;
+      }
+      radCenter=pickedBranch; radKm=km; radCat=0; radPage=1;
+      radLevel.value=""; radKeyword.value=""; setChipState();
+      var box=bboxFor(pickedBranch.lat,pickedBranch.lng,km);
+      var need=(MANIFEST.cities||[]).filter(function(c){ return boxHit(box,c.bbox); });
+      radStat.style.display="none"; radFilter.style.display="none";
+      radPager.style.display="none"; radNote.style.display="none";
+      if(!need.length){
+        radSummary.className="tip err";
+        radSummary.textContent="该半径未与任何已收录地市片区相交，请放大半径后重试。";
+        radList.innerHTML=""; return;
+      }
+      radSummary.className="tip";
+      radSummary.innerHTML="正在加载 "+need.length+" 个地市数据分片并测算距离…";
+      radList.innerHTML='<div class="rad-loading">正在读取资料库清单，请稍候…</div>';
+      Promise.all(need.map(function(c){ return loadChunk(c.i); })).then(function(chunks){
+        if(my!==radToken) return;
+        var out=[];
+        chunks.forEach(function(rows,j){
+          var cityName=need[j].name;
+          (rows||[]).forEach(function(r){
+            var d=haversineM(radCenter.lat,radCenter.lng,r[5],r[6]);
+            if(d<=km*1000) out.push({n:r[0],c:r[1],l:r[2],d:r[3],a:r[4],e:r[7],city:cityName,km:d/1000});
+          });
+        });
+        out.sort(function(a,b){ return a.km-b.km || (a.n<b.n?-1:a.n>b.n?1:0); });
+        radAll=out;
+        applyRadFilter();
+      }).catch(function(err){
+        if(my!==radToken) return;
+        radSummary.className="tip err";
+        radSummary.textContent="资料库分片加载失败（"+esc(String(err&&err.message||"网络异常"))+"）；请检查网络后重试，页面不会以估算数据替代。";
+        radList.innerHTML="";
+      });
+    }
+    function applyRadFilter(){
+      var lv=radLevel.value, kw=radKeyword.value.trim().toLowerCase();
+      radShown=radAll.filter(function(x){
+        if(radCat && !(x.c & radCat)) return false;
+        if(lv!=="" && String(x.l)!==lv) return false;
+        if(kw && x.n.toLowerCase().indexOf(kw)<0) return false;
+        return true;
+      });
+      radPage=1; renderRad();
+    }
+    function renderRad(){
+      var total=radAll.length, shown=radShown.length;
+      var c1=0,c2=0,c4=0;
+      radAll.forEach(function(x){ if(x.c&1)c1++; if(x.c&2)c2++; if(x.c&4)c4++; });
+      radStat.innerHTML=
+        '<div class="rad-stat__item"><div class="rad-stat__n">'+total+'</div><div class="rad-stat__t">合计主体</div></div>'+
+        '<div class="rad-stat__item"><div class="rad-stat__n">'+c1+'</div><div class="rad-stat__t">机关</div></div>'+
+        '<div class="rad-stat__item"><div class="rad-stat__n">'+c2+'</div><div class="rad-stat__t">事业单位</div></div>'+
+        '<div class="rad-stat__item"><div class="rad-stat__n">'+c4+'</div><div class="rad-stat__t">学校</div></div>';
+      radStat.style.display="flex"; radFilter.style.display="flex";
+      radSummary.className="tip";
+      radSummary.innerHTML="以 <b>"+esc(radCenter.name)+"</b> 为圆心、半径 <b>"+radKm+" km</b>，命中 <b>"+total+
+        "</b> 家主体"+(shown!==total?"，当前筛选显示 "+shown+" 家":"")+"；按直线距离由近及远排列。";
+      var pages=Math.max(1,Math.ceil(shown/PAGE_SIZE));
+      if(radPage>pages) radPage=pages;
+      var start=(radPage-1)*PAGE_SIZE, rows=radShown.slice(start,start+PAGE_SIZE);
+      if(!rows.length){
+        radList.innerHTML='<div class="rad-loading">当前筛选条件下暂无已收录主体，可放宽筛选或放大半径。</div>';
+      }else{
+        radList.innerHTML=rows.map(function(x){
+          var meta='<span class="rad-tag">'+esc(catNames(x.c))+'</span>'+
+            '<span class="rad-tag lv">'+esc((MANIFEST.levelLabels||{})[String(x.l)]||"未标明")+'</span>'+
+            esc(x.city+" · "+x.d);
+          if(x.e) meta+='　<span class="rad-tag">'+esc(x.e)+'</span>';
+          meta+='<br>登记地址：'+esc(x.a||"未列示");
+          return '<div class="rad-item"><div class="rad-item__top">'+
+            '<div class="rad-item__n">'+esc(x.n)+'</div>'+
+            '<div class="rad-item__d">'+fmtDist(x.km)+'</div></div>'+
+            '<div class="rad-item__meta">'+meta+'</div></div>';
+        }).join("");
+      }
+      radPager.style.display=pages>1?"flex":"none";
+      radPageInfo.textContent="第 "+radPage+" / "+pages+" 页";
+      radPrev.disabled=radPage<=1; radNext.disabled=radPage>=pages;
+      radNote.style.display="block";
+      radNote.innerHTML="数据来源：资料库 DATA 文件夹「机关 / 事业单位 / 学校」三份含经纬度整合清单（"+
+        esc(MANIFEST.generated||"")+" 生成，去重后 "+(MANIFEST.total||0)+" 家主体，"+
+        esc(MANIFEST.coordSystem||"GCJ-02")+"）。本页仅列示公开登记的机构名称、类别、行政层级、区划与登记地址；"+
+        "距离为经纬度直线距离估算，部分主体坐标为登记机关或区县中心级定位，同址机构距离相同。"+
+        "结果仅供行内政务合作位置参考，现场应用请以登记地址复核。";
+    }
+    radiusBtn.addEventListener("click",runRadius);
+    radiusInput.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); radiusBtn.click(); } });
+    radiusReset.addEventListener("click",function(){
+      radToken++; pickedBranch=null; branchInput.value=""; radiusInput.value="3";
+      hideBranchSug(); branchPicked.style.display="none";
+      radAll=[]; radShown=[]; radPage=1; radCat=0; setChipState();
+      radLevel.value=""; radKeyword.value="";
+      radSummary.className="tip"; radSummary.textContent="请选择本行网点并录入半径后查询。";
+      radList.innerHTML=""; radStat.style.display="none"; radFilter.style.display="none";
+      radPager.style.display="none"; radNote.style.display="none";
+    });
+    Array.prototype.forEach.call(radFilter.querySelectorAll(".rad-chip"),function(el){
+      el.addEventListener("click",function(){
+        radCat=parseInt(el.getAttribute("data-cat"),10); setChipState(); applyRadFilter();
+      });
+    });
+    radLevel.addEventListener("change",applyRadFilter);
+    radKeyword.addEventListener("input",function(){
+      clearTimeout(radKwTimer);
+      radKwTimer=setTimeout(applyRadFilter,200);
+    });
+    radPrev.addEventListener("click",function(){ if(radPage>1){ radPage--; renderRad(); } });
+    radNext.addEventListener("click",function(){ if(radPage*PAGE_SIZE<radShown.length){ radPage++; renderRad(); } });
+
   })();
   </script>
 </body>
@@ -1370,6 +1723,8 @@ html = r"""<!DOCTYPE html>
 html = html.replace("__REGION_JS__", REGION_JS)
 html = html.replace("__PROV_JS__", PROV_JS)
 html = html.replace("__BRANCH_DATA_JS__", BRANCH_DATA_JS)
+html = html.replace("__NEARBY_MANIFEST_JS__", NEARBY_MANIFEST_JS)
+html = html.replace("__NEARBY_VER__", NEARBY_VER)
 html = html.replace("__ORG_INTEL_JS__", ORG_INTEL_JS)
 
 out = os.path.join(BASE, "index.html")
@@ -1382,7 +1737,8 @@ html = html.replace("__PROFILE_PROXY__", PROFILE_PROXY_URL)
 html = html.replace("__SUGGEST_PROXY__", SUGGEST_PROXY_URL)
 html = html.replace("__LOCAL_SUGGEST_JS__", LOCAL_SUGGEST_JS)
 # 强校验：构建产物不得残留任何占位符、地图 Key 变量或外部接口调用痕迹
-for _bad in ("__ORG_INTEL_JS__", "__MAP_KEY_EXPR__", "__GEO_PROXY__", "__PROFILE_PROXY__",
+for _bad in ("__ORG_INTEL_JS__", "__NEARBY_MANIFEST_JS__", "__NEARBY_VER__",
+             "__MAP_KEY_EXPR__", "__GEO_PROXY__", "__PROFILE_PROXY__",
              "__SUGGEST_PROXY__", "__LOCAL_SUGGEST_JS__",
              "String.fromCharCode", "apis.map.qq.com", "restapi.amap.com"):
     assert _bad not in html, "构建产物残留禁止内容：" + _bad
