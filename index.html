@@ -697,6 +697,8 @@
       var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
       return 2*R*Math.asin(Math.sqrt(a));
     }
+    // 机构查最近网点：入参为米（haversineM 返回值）。注意不可与半径模式的 fmtDistKm 重名，
+    // 否则函数声明提升会让后定义的公里版覆盖本函数，导致米值被当成 km 显示。
     function fmtDist(m){ if(m<1000) return Math.round(m)+" 米"; if(m<100000) return (m/1000).toFixed(1)+" 公里"; return Math.round(m/1000)+" 公里"; }
 
     // ===== 前端零 Key + 三级定位降级（2026-11-07 B 方案）=====
@@ -2799,7 +2801,8 @@
     // —— 查询、筛选、分页 ——
     var radAll=[], radShown=[], radPage=1, radCat=0, radCenter=null, radKm=0, radToken=0, radKwTimer=null;
     var PAGE_SIZE=50;
-    function fmtDist(km){ return km<1 ? Math.round(km*1000)+" m" : km.toFixed(2)+" km"; }
+    // 半径模式：入参为公里（x.km）。与上方机构查网点的 fmtDist（入参米）分开命名，避免同名覆盖。
+    function fmtDistKm(km){ return km<1 ? Math.round(km*1000)+" m" : km.toFixed(2)+" km"; }
     function catNames(bit){
       var a=[]; if(bit&1)a.push("机关"); if(bit&2)a.push("事业单位"); if(bit&4)a.push("学校");
       return a.join("·")||"其他";
@@ -2906,7 +2909,7 @@
           meta+='<br>登记地址：'+esc(x.a||"未列示");
           return '<div class="rad-item"><div class="rad-item__top">'+
             '<div class="rad-item__n">'+esc(x.n)+'</div>'+
-            '<div class="rad-item__d">'+fmtDist(x.km)+'</div></div>'+
+            '<div class="rad-item__d">'+fmtDistKm(x.km)+'</div></div>'+
             '<div class="rad-item__meta">'+meta+'</div></div>';
         }).join("");
       }
@@ -3127,7 +3130,7 @@
         '<div class="pin-card__row"><span class="pin-card__k">所属区划</span>'+
           '<span class="pin-card__v">'+esc(x.city+" · "+x.d)+'</span></div>'+
         '<div class="pin-card__row"><span class="pin-card__k">直线距离</span>'+
-          '<span class="pin-card__v pin-card__dist">距圆心 '+fmtDist(x.km)+'</span></div>'+
+          '<span class="pin-card__v pin-card__dist">距圆心 '+fmtDistKm(x.km)+'</span></div>'+
         '<div class="pin-card__row"><span class="pin-card__k">登记地址</span>'+
           '<span class="pin-card__v">'+esc(x.a||"未列示")+'</span></div>'+
         (x.e?'<div class="pin-card__row"><span class="pin-card__k">备注</span>'+
@@ -3152,7 +3155,7 @@
       arr.slice(0,20).forEach(function(x,i){
         rows+='<div class="pin-card__li" data-pi="'+i+'"><div class="a"><i class="pin-card__dot" style="background:'+
           catColor(x.c)+'"></i>'+esc(x.n)+'</div><div class="b">'+esc(catNames(x.c))+' · '+esc(x.d)+
-          ' · 距圆心 '+fmtDist(x.km)+'</div></div>';
+          ' · 距圆心 '+fmtDistKm(x.km)+'</div></div>';
       });
       if(arr.length>20) rows+='<div class="pin-card__more">仅展示距圆心最近 20 家，切换「清单」查看全部。</div>';
       rows+='<div class="pin-card__acts"><button type="button" data-close>关闭</button></div>';
@@ -3166,7 +3169,7 @@
       radPinInfo.innerHTML='<div class="pi__t">'+esc(x.n)+'</div>'+
         '<div class="pi__r"><span style="color:'+catColor(x.c)+'">●</span> '+esc(catNames(x.c))+' · '+
         esc((MANIFEST.levelLabels||{})[String(x.l)]||"未标明")+' · '+esc(x.city+" · "+x.d)+
-        '　距圆心 <b style="color:#1a5bb8">'+fmtDist(x.km)+'</b></div>'+
+        '　距圆心 <b style="color:#1a5bb8">'+fmtDistKm(x.km)+'</b></div>'+
         '<div class="pi__r">登记地址：'+esc(x.a||"未列示")+'</div>'+
         (x.e?'<div class="pi__r">备注：'+esc(x.e)+'</div>':'')+
         '<div class="pi__r" style="margin-top:4px">点击图钉已弹出「单位主要信息」卡。</div>';
