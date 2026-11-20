@@ -109,7 +109,7 @@ NEARBY_MANIFEST_JSON = os.path.join(BASE, "nearby_data", "manifest.json")
 with open(NEARBY_MANIFEST_JSON, "r", encoding="utf-8") as _f:
     NEARBY_MANIFEST = json.load(_f)
 NEARBY_MANIFEST_JS = json.dumps(NEARBY_MANIFEST, ensure_ascii=False, separators=(",", ":"))
-NEARBY_VER = "20261112a"   # 数据重建后递增，用于分片 URL 绕缓存
+NEARBY_VER = "20261117s"   # 数据重建后递增（l：批次4qz 泉州市直核心政府组成部门8家机关负责人补齐核验并同步资料库，累计225家带来源留痕；m：批次4zq 漳州市直核心政府组成部门25家机关负责人补齐核验并同步资料库，累计250家带来源留痕；n：批次4pty 莆田市直核心政府组成部门25家机关负责人补齐核验并同步资料库，累计275家带来源留痕；o：批次4nd 宁德市直核心政府组成部门24家机关负责人补齐核验并同步资料库，累计299家带来源留痕；p：批次92 龙岩市直核心政府组成部门24家机关负责人补齐核验并同步资料库，累计323家带来源留痕；q：批次93 三明市直核心政府组成部门24家机关负责人补齐核验并同步资料库，累计347家带来源留痕；r：批次94 南平市直核心政府组成部门24家机关负责人补齐核验并同步资料库，累计371家带来源留痕；s：批次95 温州市直核心政府组成部门24家机关负责人补齐核验并同步资料库，累计395家带来源留痕），用于分片 URL 绕缓存
 
 # 机构名称本地联想词库（2026-11-08）：公开级画像库 8 家 + 核验资料库 4 家的规范名与别名，
 # 构建时内联。后端联想限流/不可达时前端仍即时给出候选（零网络请求），且只给已核验主体、不伪造。
@@ -419,6 +419,18 @@ html = r"""<!DOCTYPE html>
     .pin-card__v{flex:1;color:#14264d;font-weight:600;word-break:break-all}
     .pin-card__dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
     .pin-card__dist{color:#1a5bb8}
+    .pin-card__note{display:block;font-size:10.5px;color:#8a97ac;font-weight:400;margin-top:1px}
+    .pin-card__src{color:#1a5bb8;text-decoration:none;border-bottom:1px dotted #9ab4dc}
+    .pin-card__src:hover{color:#0f3f86}
+    .pin-card__row--col{display:block}
+    .pin-card__row--col .pin-card__k{display:block;margin-bottom:3px}
+    .pin-card__scope{font-size:12.5px}
+    .pin-card__scope summary{cursor:pointer;color:#14264d;font-weight:600;list-style:none;position:relative;padding-right:18px;word-break:break-all}
+    .pin-card__scope summary::-webkit-details-marker{display:none}
+    .pin-card__scope summary:after{content:"▾";position:absolute;right:2px;top:0;color:#7a8aa3;font-weight:400}
+    .pin-card__scope[open] summary:after{content:"▴"}
+    .pin-card__scope-body{margin-top:6px;padding:8px 10px;background:#f5f8fd;border-left:3px solid #b9cdf0;border-radius:0 8px 8px 0;
+      color:#33476e;font-weight:400;line-height:1.65;word-break:break-all}
     .pin-card__acts{display:flex;gap:8px;margin-top:12px}
     .pin-card__acts button{flex:1;border:1px solid var(--brand-line);background:var(--brand-soft);color:var(--brand-deep);
       border-radius:9px;padding:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -646,7 +658,7 @@ html = r"""<!DOCTYPE html>
 
         <label class="fld" for="radiusKm" style="margin-top:14px">查询半径 <span class="opt">（以所选网点经纬度为圆心，0.1—50 公里）</span></label>
         <div class="rad-row">
-          <div class="rad-main"><div class="tip">按经纬度直线距离测算，覆盖机关、事业单位、学校三类主体。</div></div>
+          <div class="rad-main"><div class="tip">按经纬度直线距离测算，覆盖机关、事业单位、公办 / 民办学校、医院、宗教组织六类主体。</div></div>
           <div class="rad-side rad-unit"><input id="radiusKm" class="inp" type="number" min="0.1" max="50" step="0.1" value="3" inputmode="decimal"></div>
         </div>
 
@@ -670,7 +682,10 @@ html = r"""<!DOCTYPE html>
           <button class="rad-chip on" data-cat="0">全部</button>
           <button class="rad-chip" data-cat="1">机关</button>
           <button class="rad-chip" data-cat="2">事业单位</button>
-          <button class="rad-chip" data-cat="4">学校</button>
+          <button class="rad-chip" data-cat="4">公办学校</button>
+          <button class="rad-chip" data-cat="8">民办学校</button>
+          <button class="rad-chip" data-cat="16">医院</button>
+          <button class="rad-chip" data-cat="32">宗教组织</button>
           <select class="rad-mini" id="radLevel">
             <option value="">全部层级</option>
             <option value="1">中央级</option>
@@ -705,8 +720,10 @@ html = r"""<!DOCTYPE html>
           <div class="rad-legend">
             <span><i style="background:#e05345"></i>机关</span>
             <span><i style="background:#1a5bb8"></i>事业单位</span>
-            <span><i style="background:#1f9d57"></i>学校</span>
-            <span><i style="background:#d98a12"></i>复合 / 其他</span>
+            <span><i style="background:#1f9d57"></i>公办学校</span>
+            <span><i style="background:#0f9e78"></i>民办学校</span>
+            <span><i style="background:#c0397a"></i>医院</span>
+            <span><i style="background:#8a5a2b"></i>宗教组织</span>
             <span><i style="background:#0f3f86"></i>本行网点（圆心）</span>
           </div>
           <div class="rad-pin-info" id="radPinInfo">点击地图上的彩色图钉查看单位详情；同址或近距离机构以数字聚合显示。</div>
@@ -724,10 +741,10 @@ html = r"""<!DOCTYPE html>
       <section class="card">
         <div class="card__h"><span class="bar"></span><h2>使用说明</h2></div>
         <ul class="notes">
-          <li>【网点半径内机构】切换顶部第二个模式，模糊录入本行网点名称并点选具体网点，再录入公里半径，点击「查询半径内机构」后即转为地图界面，可一键切回「清单」视图；数据来源为资料库 DATA 文件夹三份含经纬度整合清单（去重后 4.3 万余家主体，GCJ-02），按地市分片按需加载，页面不携带任何地图 Key 或商业数据凭据。</li>
-          <li>地图叠加街道底图：深蓝大图钉标示本行网点（圆心）与半径圈，彩色小图钉按类别区分：机关红、事业单位蓝、学校绿、复合 / 其他橙；同址或近距离机构合并为带数字的聚合点；点击彩色小图钉即弹出「单位主要信息」卡，列示单位名称、机构类别、行政层级、所属区划、直线距离、登记地址、备注与坐标，点关闭按钮、卡片外区域或按 Esc 收起；点数字聚合点先列该位置多家单位，再点其中一家看主要信息。支持放大、缩小、复位、全屏、拖拽平移与街道底图开关。街道底图瓦片经同源 /api/tiles 代理取得（静态版经已授权主站跨域代理），页面不直连任何地图域名、不携带地图 Key；底图不可用时自动退回本地绘制的零依赖点位分布图并如实标注。瓦片按 Web Mercator 切片，与等距投影点位在半径范围内局部近似对齐，仅供位置参考。</li>
-          <li>半径查询结果为经纬度直线距离估算，可按机构类别、行政层级与名称关键词筛选并分页，地图与清单同步筛选；仅列示公开登记的机构名称、类别、层级、区划与登记地址。部分主体坐标为登记机关或区县中心级定位，同址机构距离相同，现场应用请以登记地址复核。</li>
-          <li>适用对象：福建省内及浙江温州地区的党政机关、事业单位、群团组织。</li>
+          <li>【网点半径内机构】切换顶部第二个模式，模糊录入本行网点名称并点选具体网点，再录入公里半径，点击「查询半径内机构」后即转为地图界面，可一键切回「清单」视图；数据来源为资料库 DATA 文件夹五份含经纬度整合清单（机关、事业单位、学校、公立医院、宗教组织，按统一社会信用代码去重后 5.15 万余家主体，GCJ-02），按地市分片按需加载，页面不携带任何地图 Key 或商业数据凭据。</li>
+          <li>地图叠加街道底图：深蓝大图钉标示本行网点（圆心）与半径圈，彩色小图钉按类别区分：机关红、事业单位蓝、公办学校绿、民办学校青绿、医院品红、宗教组织棕；每个主体只归一个主类别，公办学校与公立医院不再重复计入事业单位，统计各类别加总等于主体总数；同址或近距离机构合并为带数字的聚合点；点击彩色小图钉即弹出「单位主要信息」卡，列示单位名称、机构类别、行政层级、所属区划、直线距离、单位负责人（事业/学校/医院/宗教多为公开登记的法定代表人；部分机关为官网现任负责人，带核验时点与来源链接、可点开核对；缺失标注未列示）、登记地址、业务范围（可展开）、备注与坐标，点关闭按钮、卡片外区域或按 Esc 收起；点数字聚合点先列该位置多家单位，再点其中一家看主要信息。支持放大、缩小、复位、全屏、拖拽平移与街道底图开关。街道底图瓦片经同源 /api/tiles 代理取得（静态版经已授权主站跨域代理），页面不直连任何地图域名、不携带地图 Key；底图不可用时自动退回本地绘制的零依赖点位分布图并如实标注。瓦片按 Web Mercator 切片，与等距投影点位在半径范围内局部近似对齐，仅供位置参考。</li>
+          <li>半径查询结果为经纬度直线距离估算，可按机构类别、行政层级与名称关键词筛选并分页，地图与清单同步筛选；仅列示公开登记的机构名称、类别、层级、区划、登记地址，以及单位负责人（法定代表人）与业务范围（部分截断）。负责人分两种口径：事业/学校/医院/宗教为公开登记的法定代表人，不代表现任实际负责人；部分机关为全网检索并交叉核验的官网现任负责人（标注核验时点、附来源链接，快照信息可能随换届变化，以官方任免文件为准）。业务范围按登记口径折叠展示。部分主体坐标为登记机关或区县中心级定位，同址机构距离相同，现场应用请以登记地址复核。</li>
+          <li>适用对象：福建省内及浙江温州地区的党政机关、事业单位、学校（公办 / 民办）、公立医院与宗教组织。</li>
           <li>距离为基于经纬度的直线距离估算（Haversine 公式），实际步行或驾车距离可能略有差异。</li>
           <li>网点坐标依据福建海峡银行官网网点目录（2026-08-21 版，共 91 家）结合合规公开地图（GCJ-02）位置实测匹配留存。</li>
           <li>本工具仅用于政务合作位置参考，录入信息仅保存在本设备本地。</li>
@@ -1601,7 +1618,7 @@ html = r"""<!DOCTYPE html>
     });
 
     // ===== 网点半径内机构查询（2026-11-12）=====
-    // 数据源：资料库 DATA 文件夹三份含经纬度清单，由 build_nearby_data.py 去重后按地市分片。
+    // 数据源：资料库 DATA 文件夹五份含经纬度清单，由 build_nearby_data.py 互斥归类去重后按地市分片。
     // 前端按查询圆外接矩形与市域包围盒相交情况按需加载分片，本地完成测距与筛选，
     // 不调用任何后端接口、不携带任何 Key 或凭据，静态托管与同源部署行为一致。
     var MANIFEST = window.NEARBY_MANIFEST || {cities:[],total:0,catLabels:{},levelLabels:{}};
@@ -1615,7 +1632,10 @@ html = r"""<!DOCTYPE html>
         radLevel=$("radLevel"), radKeyword=$("radKeyword");
 
     // 地图视图：经纬度等距投影自绘，不依赖任何地图 SDK / 瓦片 / Key
-    var CAT_COLORS={1:"#e05345",2:"#1a5bb8",4:"#1f9d57",0:"#d98a12"};
+    // 主类别互斥位：1 机关 / 2 事业单位 / 4 公办学校 / 8 民办学校 / 16 医院 / 32 宗教组织；0 复合兜底。
+    var CAT_COLORS={1:"#e05345",2:"#1a5bb8",4:"#1f9d57",8:"#0f9e78",16:"#c0397a",32:"#8a5a2b",0:"#d98a12"};
+    var CAT_NAMES={1:"机关",2:"事业单位",4:"公办学校",8:"民办学校",16:"医院",32:"宗教组织"};
+    var CAT_BITS=[1,2,4,8,16,32];
     var radView="map", radViewMap=$("radViewMap"), radViewList=$("radViewList"),
         mapWrap=$("radMapWrap"), mapBox=$("radMap"), mapSvg=$("radSvg"),
         radG=$("radG"), radPins=$("radPins"), radOvl=$("radOvl"), radClipRect=$("radClipRect"),
@@ -1638,7 +1658,7 @@ html = r"""<!DOCTYPE html>
       $("radResultCard").style.display=isRad?"":"none";
       var sub=document.querySelector(".top__sub");
       if(sub) sub.textContent=isRad
-        ? "选择本行网点并录入公里半径，查询范围内机关、事业单位与学校。福建全省及浙江温州适用。"
+        ? "选择本行网点并录入公里半径，查询范围内机关、事业单位、学校、医院与宗教组织。福建全省及浙江温州适用。"
         : "输入机构名称（模糊即可），自动匹配距离最近的福建海峡银行网点。福建全省及浙江温州适用。";
     }
     tabOrg.addEventListener("click",function(){ setMode("org"); });
@@ -1730,7 +1750,8 @@ html = r"""<!DOCTYPE html>
     // 半径模式：入参为公里（x.km）。与上方机构查网点的 fmtDist（入参米）分开命名，避免同名覆盖。
     function fmtDistKm(km){ return km<1 ? Math.round(km*1000)+" m" : km.toFixed(2)+" km"; }
     function catNames(bit){
-      var a=[]; if(bit&1)a.push("机关"); if(bit&2)a.push("事业单位"); if(bit&4)a.push("学校");
+      var a=[];
+      CAT_BITS.forEach(function(k){ if(bit&k) a.push(CAT_NAMES[k]); });
       return a.join("·")||"其他";
     }
     function setChipState(){
@@ -1777,8 +1798,9 @@ html = r"""<!DOCTYPE html>
           var cityName=need[j].name;
           (rows||[]).forEach(function(r){
             var d=haversineM(radCenter.lat,radCenter.lng,r[5],r[6]);
+            var hv=r[10]? (function(){ try{ return JSON.parse(r[10]); }catch(err){ return null; } })() : null;
             if(d<=km*1000) out.push({n:r[0],c:r[1],l:r[2],d:r[3],a:r[4],e:r[7],city:cityName,
-              km:d/1000,lat:r[5],lng:r[6]});
+              h:r[8]||"", b:r[9]||"", hv:hv, km:d/1000,lat:r[5],lng:r[6]});
           });
         });
         out.sort(function(a,b){ return a.km-b.km || (a.n<b.n?-1:a.n>b.n?1:0); });
@@ -1810,13 +1832,15 @@ html = r"""<!DOCTYPE html>
     }
     function renderRad(){
       var total=radAll.length, shown=radShown.length;
-      var c1=0,c2=0,c4=0;
-      radAll.forEach(function(x){ if(x.c&1)c1++; if(x.c&2)c2++; if(x.c&4)c4++; });
-      radStat.innerHTML=
-        '<div class="rad-stat__item"><div class="rad-stat__n">'+total+'</div><div class="rad-stat__t">合计主体</div></div>'+
-        '<div class="rad-stat__item"><div class="rad-stat__n">'+c1+'</div><div class="rad-stat__t">机关</div></div>'+
-        '<div class="rad-stat__item"><div class="rad-stat__n">'+c2+'</div><div class="rad-stat__t">事业单位</div></div>'+
-        '<div class="rad-stat__item"><div class="rad-stat__n">'+c4+'</div><div class="rad-stat__t">学校</div></div>';
+      // 互斥归类：每个主体只落一位，各分类加总等于合计主体，杜绝学校/医院与事业单位重复计数。
+      var cats={}; CAT_BITS.forEach(function(k){ cats[k]=0; });
+      radAll.forEach(function(x){ var k=catKey(x.c); if(k>0) cats[k]=(cats[k]||0)+1; });
+      var statHtml='<div class="rad-stat__item"><div class="rad-stat__n">'+total+'</div><div class="rad-stat__t">合计主体</div></div>';
+      CAT_BITS.forEach(function(k){
+        statHtml+='<div class="rad-stat__item"><div class="rad-stat__n">'+cats[k]+'</div>'+
+          '<div class="rad-stat__t" style="color:'+CAT_COLORS[k]+'">'+CAT_NAMES[k]+'</div></div>';
+      });
+      radStat.innerHTML=statHtml;
       radStat.style.display="flex"; radFilter.style.display="flex";
       radSummary.className="tip";
       radSummary.innerHTML="以 <b>"+esc(radCenter.name)+"</b> 为圆心、半径 <b>"+radKm+" km</b>，命中 <b>"+total+
@@ -1832,6 +1856,7 @@ html = r"""<!DOCTYPE html>
             '<span class="rad-tag lv">'+esc((MANIFEST.levelLabels||{})[String(x.l)]||"未标明")+'</span>'+
             esc(x.city+" · "+x.d);
           if(x.e) meta+='　<span class="rad-tag">'+esc(x.e)+'</span>';
+          if(x.h) meta+='<br>单位负责人：'+esc(x.h);
           meta+='<br>登记地址：'+esc(x.a||"未列示");
           return '<div class="rad-item"><div class="rad-item__top">'+
             '<div class="rad-item__n">'+esc(x.n)+'</div>'+
@@ -1843,11 +1868,12 @@ html = r"""<!DOCTYPE html>
       radPageInfo.textContent="第 "+radPage+" / "+pages+" 页";
       radPrev.disabled=radPage<=1; radNext.disabled=radPage>=pages;
       radNote.style.display="block";
-      radNote.innerHTML="数据来源：资料库 DATA 文件夹「机关 / 事业单位 / 学校」三份含经纬度整合清单（"+
-        esc(MANIFEST.generated||"")+" 生成，去重后 "+(MANIFEST.total||0)+" 家主体，"+
-        esc(MANIFEST.coordSystem||"GCJ-02")+"）。本页仅列示公开登记的机构名称、类别、行政层级、区划与登记地址；"+
-        "距离为经纬度直线距离估算，部分主体坐标为登记机关或区县中心级定位，同址机构距离相同。"+
-        "结果仅供行内政务合作位置参考，现场应用请以登记地址复核。";
+      radNote.innerHTML="数据来源：资料库 DATA 文件夹「机关 / 事业单位 / 学校 / 公立医院 / 宗教组织」五份含经纬度整合清单（"+
+        esc(MANIFEST.generated||"")+" 生成，按统一社会信用代码去重后 "+(MANIFEST.total||0)+" 家主体，"+
+        esc(MANIFEST.coordSystem||"GCJ-02")+"）。学校按办学性质分公办 / 民办；每个主体只归一个主类别，"+
+        "公办学校与公立医院不再重复计入事业单位，各类别互斥、加总等于主体总数。本页仅列示公开登记的机构名称、"+
+        "类别、行政层级、区划与登记地址；距离为经纬度直线距离估算，部分主体坐标为登记机关或区县中心级定位，"+
+        "同址机构距离相同。结果仅供行内政务合作位置参考，现场应用请以登记地址复核。";
       // 查询结果默认进入地图视图，清单视图可一键切回；两视图共用同一份筛选结果
       radViewMap.classList.toggle("on",radView==="map");
       radViewList.classList.toggle("on",radView==="list");
@@ -1862,12 +1888,9 @@ html = r"""<!DOCTYPE html>
 
     // ===== 地图渲染：等距投影 + 类别着色图钉 + 同址聚合（零外部地图依赖）=====
     function catKey(c){
-      var n=((c&1)?1:0)+((c&2)?1:0)+((c&4)?1:0);
-      if(n>1) return 0;
-      if(c&1) return 1;
-      if(c&2) return 2;
-      if(c&4) return 4;
-      return -1;
+      var hit=CAT_BITS.filter(function(k){ return c&k; });
+      if(hit.length!==1) return hit.length>1 ? 0 : -1;
+      return hit[0];
     }
     function catColor(c){
       var k=catKey(c);
@@ -2057,8 +2080,18 @@ html = r"""<!DOCTYPE html>
           '<span class="pin-card__v">'+esc(x.city+" · "+x.d)+'</span></div>'+
         '<div class="pin-card__row"><span class="pin-card__k">直线距离</span>'+
           '<span class="pin-card__v pin-card__dist">距圆心 '+fmtDistKm(x.km)+'</span></div>'+
+        '<div class="pin-card__row"><span class="pin-card__k">单位负责人</span>'+
+          '<span class="pin-card__v">'+esc(x.h||"未列示")+
+          (x.hv?'<span class="pin-card__note">官网现任负责人'+(x.hv.t?'（核验时点 '+esc(x.hv.t)+'）':'')+
+              (x.hv.r?' · '+esc(x.hv.r):'')+'；<a class="pin-card__src" href="'+esc(x.hv.s||"#")+
+              '" target="_blank" rel="noopener">查看来源</a>'+(x.hv.ov?' · 已纠正数据源错配':'')+'</span>'
+           :(x.h?'<span class="pin-card__note">（公开登记法定代表人，以官方任免为准）</span>':''))+
+          '</span></div>'+
         '<div class="pin-card__row"><span class="pin-card__k">登记地址</span>'+
           '<span class="pin-card__v">'+esc(x.a||"未列示")+'</span></div>'+
+        (x.b?'<div class="pin-card__row pin-card__row--col"><span class="pin-card__k">业务范围</span>'+
+          '<details class="pin-card__scope"><summary>'+esc(x.b.length>34?x.b.slice(0,34)+"…":x.b)+
+          '</summary><div class="pin-card__scope-body">'+esc(x.b)+'</div></details></div>':'')+
         (x.e?'<div class="pin-card__row"><span class="pin-card__k">备注</span>'+
           '<span class="pin-card__v">'+esc(x.e)+'</span></div>':'')+
         '<div class="pin-card__row"><span class="pin-card__k">坐标</span>'+
@@ -2096,9 +2129,10 @@ html = r"""<!DOCTYPE html>
         '<div class="pi__r"><span style="color:'+catColor(x.c)+'">●</span> '+esc(catNames(x.c))+' · '+
         esc((MANIFEST.levelLabels||{})[String(x.l)]||"未标明")+' · '+esc(x.city+" · "+x.d)+
         '　距圆心 <b style="color:#1a5bb8">'+fmtDistKm(x.km)+'</b></div>'+
+        (x.h?'<div class="pi__r">单位负责人：'+esc(x.h)+'</div>':'')+
         '<div class="pi__r">登记地址：'+esc(x.a||"未列示")+'</div>'+
         (x.e?'<div class="pi__r">备注：'+esc(x.e)+'</div>':'')+
-        '<div class="pi__r" style="margin-top:4px">点击图钉已弹出「单位主要信息」卡。</div>';
+        '<div class="pi__r" style="margin-top:4px">点击图钉已弹出「单位主要信息」卡（含业务范围）。</div>';
     }
     function showBucket(k){
       var b=mapBuckets[k]; if(!b||!b.items.length) return;
