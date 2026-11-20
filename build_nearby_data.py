@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
-"""由资料库 DATA 文件夹四份清单生成「网点辐射查询」前端分片数据。
+"""由资料库 DATA 文件夹六份清单生成「网点辐射查询」前端分片数据。
 
 数据来源（用户资料库 /space/d/Df67QzHHevCHIsl4LBor7C）：
-  1. 福建浙江温州机关_整合_行政层级_经纬度.xlsx            → 机关清单
-  2. 福建浙江温州事业单位_整合_行政层级_经纬度_20261110.xlsx → 事业单位清单
-  3. 福建温州公办民办非企业学校_整合_经纬度_行政层级_20261110.xlsx → 学校清单
-  4. 福建海峡银行_91.xlsx                                  → 仅作网点总数核对，圆心取 server/data/branches.json
+  1. 福建浙江温州机关_整合_行政层级_经纬度.xlsx              → 机关清单
+  2. 福建浙江温州事业单位_整合_行政层级_经纬度_20261110.xlsx   → 事业单位清单
+  3. 福建温州公办民办非企业学校_整合_经纬度_行政层级_20261110.xlsx → 学校清单（按办学性质拆公办 / 民办）
+  4. 福建浙江温州公立医院_整合_行政层级_经纬度_20261113.xlsx   → 公立医院清单
+  5. 福建浙江温州宗教组织_整合_行政层级_经纬度_20261113.xlsx   → 宗教组织清单
+  6. 福建海峡银行_91.xlsx                                    → 仅作网点总数核对，圆心取 server/data/branches.json
 
 口径：
-  - 三份清单「经纬度」列均为「经度,纬度」GCJ-02；机关/学校另有独立「经度」「纬度」列，优先取独立列。
-  - 只提取业务所需最小字段，不落法定代表人、联系电话、统一社会信用代码等到前端页面。
-  - 跨表重复主体按统一社会信用代码（缺失时按 名称+市+区县）合并，类别位或叠加。
+  - 各清单「经纬度」列均为「经度,纬度」GCJ-02；机关/学校另有独立「经度」「纬度」列，优先取独立列。
+  - 只提取业务所需最小字段；法定代表人（单位负责人）与经营范围作为补充公开登记字段落前端，
+    用于点击图钉后的「单位主要信息」卡；联系电话、统一社会信用代码等仍不落前端页面。
+    经营范围按 120 字截断（前端折叠显示），负责人按 40 字截断；缺失一律留空、前端如实标注未列示。
+  - 跨表重复主体按统一社会信用代码（缺失时按 名称+市+区县）合并；主体只归一个主类别，
+    归类优先级为 宗教组织 > 医院 > 学校 > 机关 > 事业单位（学校按办学性质细分公办/民办）。
+    这样公办学校、公立医院不再重复计入事业单位，统计各类别互斥、加总等于去重主体数。
   - 按地市切片，前端依查询圆外接矩形与市域包围盒相交情况按需加载，避免一次性下载全量数据。
 """
 import json
@@ -38,11 +44,15 @@ CITY_CENTER = {
     "龙岩市": (25.091, 117.030), "三明市": (26.264, 117.639),
     "南平市": (26.642, 118.178), "温州市": (27.994, 120.699),
 }
-CAT_BIT = {"机关": 1, "事业单位": 2, "学校": 4}
+# 主类别互斥位：一个主体只落一位，统计加总等于去重主体数。
+# 1 机关 / 2 事业单位 / 4 公办学校 / 8 民办学校 / 16 医院 / 32 宗教组织。
+CAT_BIT = {"机关": 1, "事业单位": 2, "公办学校": 4, "民办学校": 8, "医院": 16, "宗教组织": 32}
+# 归类优先级（高者覆盖低者）：命中更具体类别的主体不重复计入宽泛的事业单位。
+CAT_PRIORITY = {32: 6, 16: 5, 8: 4, 4: 4, 1: 3, 2: 1}
 LEVEL_CODE = {"中央级": 1, "省属": 2, "市属": 3, "区县属": 4, "街镇属": 5}
 LEVEL_LABEL = {"0": "未标明", "1": "中央级", "2": "省属", "3": "市属", "4": "区县属", "5": "街镇属"}
-CAT_LABEL = {"1": "机关", "2": "事业单位", "4": "学校", "3": "机关·事业单位",
-             "5": "机关·学校", "6": "事业单位·学校", "7": "机关·事业单位·学校"}
+CAT_LABEL = {"1": "机关", "2": "事业单位", "4": "公办学校", "8": "民办学校",
+             "16": "医院", "32": "宗教组织"}
 SCHOOL_TYPE = {"幼儿园": "幼儿园", "学前教育": "幼儿园", "小学": "小学",
                "中学": "中学", "初中": "中学", "高中": "高中", "高校": "高校"}
 
@@ -50,6 +60,8 @@ SOURCES = [
     ("福建浙江温州机关_整合_行政层级_经纬度.xlsx", "机关清单", "机关"),
     ("福建浙江温州事业单位_整合_行政层级_经纬度_20261110.xlsx", "事业单位清单", "事业单位"),
     ("福建温州公办民办非企业学校_整合_经纬度_行政层级_20261110.xlsx", "学校清单", "学校"),
+    ("福建浙江温州公立医院_整合_行政层级_经纬度_20261113.xlsx", "公立医院清单", "医院"),
+    ("福建浙江温州宗教组织_整合_行政层级_经纬度_20261113.xlsx", "宗教组织清单", "宗教组织"),
 ]
 
 # 业务覆盖范围：福建全省 + 浙江温州行政区（GCJ-02）。
@@ -190,25 +202,46 @@ def load_rows():
             key = credit if len(credit) >= 15 else (name + "|" + city + "|" + district)
             addr = norm_text(row[idx["地址（注册地址）"]] if "地址（注册地址）" in idx else "", 60)
             lvl = level_code(row[idx["行政层级"]] if "行政层级" in idx else "")
+            # 补充公开登记字段：单位负责人（法定代表人）与经营范围；缺失一律留空，前端如实标注未列示。
+            head = norm_text(row[idx["法定代表人"]] if "法定代表人" in idx else "", 40)
+            scope = norm_text(row[idx["经营范围"]] if "经营范围" in idx else "", 120)
             extra = ""
+            # 归类位：学校按办学性质拆公办(4)/民办(8)，其余按主类别互斥落一位。
             if cat == "学校":
-                st = SCHOOL_TYPE.get(norm_text(row[idx["学校类型"]]) if "学校类型" in idx else "", "")
                 own = norm_text(row[idx["办学性质"]]) if "办学性质" in idx else ""
+                bit = CAT_BIT["民办学校"] if own == "民办" else CAT_BIT["公办学校"]
+                st = SCHOOL_TYPE.get(norm_text(row[idx["学校类型"]]) if "学校类型" in idx else "", "")
                 extra = ("公办" if own == "公办" else "民办" if own == "民办" else "") + ("-" + st if st else "")
+            elif cat == "医院":
+                bit = CAT_BIT["医院"]
+                extra = "公立医院"
+            elif cat == "宗教组织":
+                bit = CAT_BIT["宗教组织"]
+                extra = "宗教活动场所"
+            else:
+                bit = CAT_BIT[cat]
             rec = merged.get(key)
             if rec is None:
                 merged[key] = {
-                    "n": name, "c": CAT_BIT[cat], "l": lvl, "d": district,
+                    "n": name, "c": bit, "l": lvl, "d": district,
                     "a": addr, "y": lat, "x": lng, "e": extra, "city": city,
+                    "h": head, "b": scope,
                 }
             else:
-                rec["c"] |= CAT_BIT[cat]
+                # 互斥归类：优先级更高者覆盖（如学校/医院覆盖事业单位），杜绝重复计数。
+                if CAT_PRIORITY.get(bit, 0) > CAT_PRIORITY.get(rec["c"], 0):
+                    rec["c"] = bit
                 if len(addr) > len(rec["a"]):
                     rec["a"] = addr
                 if lvl and (not rec["l"] or lvl < rec["l"]):
                     rec["l"] = lvl
                 if extra and not rec["e"]:
                     rec["e"] = extra
+                # 补充字段：取非空且更长者，避免跨表合并时丢失负责人/经营范围。
+                if head and len(head) > len(rec.get("h", "")):
+                    rec["h"] = head
+                if scope and len(scope) > len(rec.get("b", "")):
+                    rec["b"] = scope
         stats[cat] = {"rows": n, "excluded": excluded, "mismatch": mismatch}
         wb.close()
     return merged, stats
@@ -219,7 +252,8 @@ def main():
     buckets = {c: [] for c in CITY_ORDER}
     for rec in merged.values():
         buckets[rec["city"]].append([
-            rec["n"], rec["c"], rec["l"], rec["d"], rec["a"], rec["y"], rec["x"], rec["e"]
+            rec["n"], rec["c"], rec["l"], rec["d"], rec["a"], rec["y"], rec["x"], rec["e"],
+            rec.get("h", ""), rec.get("b", "")
         ])
 
     os.makedirs(OUT, exist_ok=True)
@@ -243,23 +277,33 @@ def main():
             "count": len(rows), "bbox": [round(v, 6) for v in bbox],
         })
 
+    cat_totals = {}
+    for rec in merged.values():
+        cat_totals[str(rec["c"])] = cat_totals.get(str(rec["c"]), 0) + 1
+
     manifest = {
         "generated": datetime.date.today().isoformat(),
-        "source": "资料库 DATA 文件夹：机关 / 事业单位 / 学校三份含经纬度清单（启信宝公开登记信息整合）",
+        "source": "资料库 DATA 文件夹：机关 / 事业单位 / 学校 / 公立医院 / 宗教组织五份含经纬度清单（启信宝公开登记信息整合）",
         "coordSystem": "GCJ-02",
         "total": len(merged),
         "sourceStats": stats,
+        "catTotals": cat_totals,
         "scope": {"lat": [LAT_MIN, LAT_MAX], "lng": [LNG_MIN, LNG_MAX],
                   "cityMatchMaxKm": MATCH_MAX_KM,
                   "note": "仅保留福建全省与浙江温州行政区范围内的坐标，并以项目自有 95 个区县中心"
                           "校验坐标与登记市一致性（阈值 %g km）；无坐标、伪坐标及跨区误匹配记录"
                           "不参与测算，不臆造坐标。" % MATCH_MAX_KM},
-        "dedup": "跨表重复主体按统一社会信用代码合并（缺失时按 名称+市+区县），类别叠加。",
+        "dedup": "跨表重复主体按统一社会信用代码合并（缺失时按 名称+市+区县）；主体只归一个主类别，"
+                 "优先级 宗教组织>医院>学校>机关>事业单位，学校按办学性质分公办/民办，"
+                 "公办学校与公立医院不再重复计入事业单位，各类别互斥、加总等于去重主体数。",
         "cities": cities,
         "levelLabels": LEVEL_LABEL,
         "catLabels": CAT_LABEL,
-        "disclaimer": "仅列示公开登记的机构名称、类别、行政层级、区划、注册地址与经纬度；"
-                      "地址以登记地址为准，坐标部分来自公开地图地理编码（含少量粗粒度定位），"
+        "extraFields": "分片行索引 8=单位负责人（法定代表人，截断 40 字）、9=经营范围/业务范围（截断 120 字）；"
+                       "均为公开登记信息，缺失留空，前端如实标注未列示，仅供行内政务合作走访参考。",
+        "disclaimer": "仅列示公开登记的机构名称、类别、行政层级、区划、注册地址、经纬度，"
+                      "以及单位负责人（法定代表人）与经营范围；负责人为公开登记信息，不代表现任实际负责人，"
+                      "以官方任免文件为准；地址以登记地址为准，坐标部分来自公开地图地理编码（含少量粗粒度定位），"
                       "距离为经纬度直线距离估算，仅供行内政务合作位置参考。",
     }
     with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8", newline="\n") as f:
@@ -270,6 +314,11 @@ def main():
         print("  %-6s 行=%6d 剔除(无坐标/越界)=%4d 跨区误匹配=%4d" %
               (cat, s["rows"], s["excluded"], s["mismatch"]))
     print("去重合并后主体数：%d" % len(merged))
+    print("互斥分类统计（加总应等于主体数）：")
+    for bit, name in [(1, "机关"), (2, "事业单位"), (4, "公办学校"),
+                      (8, "民办学校"), (16, "医院"), (32, "宗教组织")]:
+        print("  %-6s %6d" % (name, cat_totals.get(str(bit), 0)))
+    print("  加总   %6d" % sum(cat_totals.values()))
     print("分片文件合计：%.2f MB" % (total_bytes / 1024 / 1024))
     for c in cities:
         print("  c%-2d %-5s %6d 条  bbox=%s" %
