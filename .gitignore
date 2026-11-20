@@ -1,1 +1,5 @@
 *.bak.*
+# 服务端密钥：绝不入库、绝不随公开仓库发布
+.env
+server/.env
+*.env.local
