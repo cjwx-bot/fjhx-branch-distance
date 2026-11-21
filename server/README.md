@@ -35,7 +35,7 @@ node server.js
    - `DATA_PROVIDER=qcc`（或 `tyc`）
    - 填 `QCC_APP_KEY` / `QCC_APP_SECRET`（企查查开放平台申请）
      或 `TYC_TOKEN`（天眼查开放平台申请）
-   - 可选 `MAP_KEY`：腾讯地图 WebService 密钥，启用后按"注册地址"精确地理编码，最近网点更准
+   - 可选 `MAP_KEY`：高德地图开放平台「Web服务」类型密钥（GEO_PROVIDER=tencent 时才用腾讯 Key），启用后按"注册地址"精确地理编码，最近网点更准
 3. 重启服务。
 
 > ⚠️ **字段映射可能需微调**：qcc/tyc 不同订阅产品的返回字段名不完全一致。
