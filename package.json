@@ -1,0 +1,14 @@
+{
+  "name": "fjhx-branch-distance",
+  "private": true,
+  "version": "1.0.0",
+  "description": "最近网点查询：单文件 H5 + 高德地图后端代理",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
