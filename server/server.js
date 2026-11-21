@@ -9,7 +9,10 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const https = require("https");
 const { lookup } = require("./providers/lookup");
+const { resolveGeo, suggestNames, providerLabel } = require("./providers/geo");
+const { resolveProfile, stats: profileStats } = require("./providers/profile");
 const core = require("./core");
 
 // —— 轻量 .env 加载（避免额外依赖）——
@@ -53,6 +56,55 @@ function sendJSON(res, code, obj) {
   res.end(body);
 }
 
+// —— 街道底图瓦片同源代理（2026-11-12）——
+// 页面只请求同源 /api/tiles，不直连任何地图域名、不携带任何 Key；
+// 上游固定为高德公开瓦片（技能白名单内地图数据源），严格校验 z/x/y 防 SSRF。
+// 上游不可用时返回 502，前端自动退回零依赖的点位分布图并如实标注，不以空白冒充底图。
+const TILE_HOSTS = [
+  "webrd01.is.autonavi.com", "webrd02.is.autonavi.com",
+  "webrd03.is.autonavi.com", "webrd04.is.autonavi.com"
+];
+const TILE_TIMEOUT = Number(process.env.TILE_TIMEOUT_MS || 8000);
+
+function tileError(res) {
+  if (res.headersSent) { try { res.end(); } catch (e) {} return; }
+  res.writeHead(502, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Access-Control-Allow-Origin": "*"
+  });
+  res.end("tile upstream unavailable");
+}
+
+function proxyTile(res, z, x, y) {
+  const host = TILE_HOSTS[(x + y) % TILE_HOSTS.length];
+  const qs = "lang=zh_cn&size=1&scale=1&style=8&x=" + x + "&y=" + y + "&z=" + z;
+  const up = https.get({
+    host: host,
+    path: "/appmaptile?" + qs,
+    timeout: TILE_TIMEOUT,
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; fjhx-branch-distance/1.0)",
+      "Accept": "image/png,image/*;q=0.9"
+    }
+  }, r => {
+    const ct = String(r.headers["content-type"] || "");
+    if (r.statusCode !== 200 || !/^image\/(png|jpe?g|webp)$/i.test(ct)) {
+      r.resume();
+      return tileError(res);
+    }
+    res.writeHead(200, {
+      "Content-Type": ct,
+      "Cache-Control": "public, max-age=86400",
+      "Access-Control-Allow-Origin": "*",
+      "X-Content-Type-Options": "nosniff"
+    });
+    r.pipe(res);
+  });
+  up.on("timeout", () => up.destroy(new Error("tile timeout")));
+  up.on("error", () => tileError(res));
+}
+
 const server = http.createServer(async (req, res) => {
   // CORS 预检
   if (req.method === "OPTIONS") { sendJSON(res, 204, {}); return; }
@@ -60,8 +112,82 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
   const pathname = url.pathname;
 
+  // 能力探测：只回报是否已配置 Key，不回传 Key 本身
   if (pathname === "/api/health") {
-    return sendJSON(res, 200, { ok: true, provider: PROVIDER, mock: PROVIDER === "mock" });
+    return sendJSON(res, 200, {
+      ok: true,
+      provider: PROVIDER,
+      mock: PROVIDER === "mock",
+      geoEnabled: !!process.env.MAP_KEY && !/Please apply|replace this placeholder/i.test(process.env.MAP_KEY),
+      geoProvider: providerLabel(),
+      profile: profileStats()
+    });
+  }
+
+  // 街道底图瓦片：同源代理，前端零 Key、不直连地图域名
+  if (pathname === "/api/tiles") {
+    const zs = url.searchParams.get("z") || "";
+    const xs = url.searchParams.get("x") || "";
+    const ys = url.searchParams.get("y") || "";
+    if (!/^\d{1,2}$/.test(zs) || !/^\d{1,7}$/.test(xs) || !/^\d{1,7}$/.test(ys)) {
+      return sendJSON(res, 400, { error: "invalid tile params" });
+    }
+    const z = Number(zs), x = Number(xs), y = Number(ys), lim = Math.pow(2, z);
+    if (z < 3 || z > 18 || x >= lim || y >= lim) {
+      return sendJSON(res, 400, { error: "tile out of range" });
+    }
+    return proxyTile(res, z, x, y);
+  }
+
+  // 单位画像：编制参阅材料时按机构名称调取启信慧眼核验画像（凭据仅服务端持有）
+  if (pathname === "/api/profile") {
+    const name = (url.searchParams.get("name") || "").trim();
+    if (!name) return sendJSON(res, 400, { found: false, reason: "empty-name", message: "缺少 name 参数" });
+    try {
+      const out = await resolveProfile(name, {
+        provider: process.env.PROFILE_PROVIDER || "local",
+        key: process.env.QIXIN_MCP_KEY,
+        timeout: Number(process.env.PROFILE_TIMEOUT_MS || 6000)
+      });
+      return sendJSON(res, 200, out);
+    } catch (e) {
+      return sendJSON(res, 200, { found: false, reason: "profile-error", message: "画像资料库暂不可用，材料按未收录口径出具" });
+    }
+  }
+
+  // 机构名称输入联想：录入时实时给出相近的真实机构名供选择（Key 仅服务端持有）
+  if (pathname === "/api/suggest") {
+    const name = (url.searchParams.get("name") || "").trim();
+    if (!name) return sendJSON(res, 200, { found: false, reason: "empty-name", suggestions: [] });
+    try {
+      const out = await suggestNames(name, {
+        key: process.env.MAP_KEY,
+        provider: process.env.GEO_PROVIDER || "amap",
+        region: process.env.GEO_REGION || "福建",
+        timeout: Number(process.env.SUGGEST_TIMEOUT_MS || 2500)
+      });
+      return sendJSON(res, 200, out);
+    } catch (e) {
+      return sendJSON(res, 200, { found: false, reason: "upstream-unavailable", suggestions: [] });
+    }
+  }
+
+  // 实时真实定位：按机构名称取高德 POI 坐标（Key 仅服务端持有）
+  if (pathname === "/api/geo") {
+    const name = (url.searchParams.get("name") || "").trim();
+    if (!name) return sendJSON(res, 400, { found: false, reason: "empty-name", message: "缺少 name 参数" });
+    try {
+      const out = await resolveGeo(name, {
+        key: process.env.MAP_KEY,
+        provider: process.env.GEO_PROVIDER || "amap",
+        region: process.env.GEO_REGION || "福建",
+        timeout: Number(process.env.GEO_TIMEOUT_MS || 4500)
+      });
+      return sendJSON(res, 200, out);
+    } catch (e) {
+      // 不回传底层错误细节，避免泄露服务端配置
+      return sendJSON(res, 200, { found: false, reason: "geo-error", message: "实时定位暂不可用，已回退离线定位" });
+    }
   }
 
   if (pathname === "/api/org") {
@@ -118,10 +244,35 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 静态资源（可选：若与 H5 同目录部署，可直接托管前端）
+  // 未匹配的 API 路径统一按接口语义返回 404，不落入静态资源分支
+  if (pathname.indexOf("/api/") === 0) {
+    return sendJSON(res, 404, { error: "not found" });
+  }
+
+  // 静态资源（与 H5 同目录部署；根路径映射到 index.html）
   if (req.method === "GET") {
-    const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, "");
-    const filePath = path.join(__dirname, "..", safePath);
+    let rel;
+    try { rel = decodeURIComponent(pathname); } catch (e) { rel = pathname; }
+    rel = path.normalize(rel).replace(/^[\\\/]+/, "");
+    if (rel.indexOf("..") !== -1) return sendJSON(res, 403, { error: "forbidden" });
+    if (!rel || rel === ".") rel = "index.html";
+    else if (/[\\\/]$/.test(rel)) rel = rel + "index.html";
+
+    // —— 静态资源安全边界（上线前强制）——
+    // 后端 .env 与服务端源码不得经 HTTP 读取；仅放行页面运行所需的静态资源类型。
+    // 单文件 H5 已内联全部 CSS/JS/数据，根目录其余源码不属于浏览器运行依赖。
+    const norm = rel.replace(/\\/g, "/").toLowerCase();
+    const denyDir = /(^|\/)(server|intel|chrome_profile|\.git|\.github|node_modules)(\/|$)/.test(norm);
+    const denyEnv = /(^|\/)\.env(\.|$)/.test(norm);
+    const denySrc = /(^|\/)(build_index\.py|brief_doc\.js|org_struct\.js|intel_brief\.js|intel_pipeline\.py|verify_index\.js|verify_browser_cdp\.py|package\.json|package-lock\.json)$/.test(norm);
+    // 「网点半径内机构」地市分片：纯静态公开登记信息，仅放行 nearby_data/cN.js，不放行源码或凭据文件。
+    const allowNearby = /^nearby_data\/c\d+\.js$/.test(norm);
+    const safeExt = allowNearby || /\.(html?|css|png|jpe?g|gif|svg|ico|webp|txt|pdf|woff2?)$/.test(norm);
+    if (denyDir || denyEnv || denySrc || !safeExt) {
+      return sendJSON(res, 403, { error: "forbidden" });
+    }
+
+    const filePath = path.join(__dirname, "..", rel);
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       const ext = path.extname(filePath);
       const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" }[ext] || "application/octet-stream";
@@ -133,9 +284,11 @@ const server = http.createServer(async (req, res) => {
   sendJSON(res, 404, { error: "not found" });
 });
 
-server.listen(PORT, () => {
-  console.log("✅ 福建海峡银行网点查询后端已启动");
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("✅ 福建海峡银行网点查询服务已启动（单端口：静态页 + 定位 API）");
   console.log("   监听端口:", PORT);
+  console.log("   实时定位 MAP_KEY =", process.env.MAP_KEY ? "已配置" : "未配置（/api/geo 将如实回退）");
   console.log("   数据提供方 DATA_PROVIDER =", PROVIDER, PROVIDER === "mock" ? "（无密钥示例模式，接入密钥后切换 qcc/tyc）" : "");
-  console.log("   接口: GET /api/org?name=机构名&type=government");
+  console.log("   接口: GET /api/health · GET /api/geo · GET /api/suggest · GET /api/profile · GET /api/tiles · GET /api/org");
+  console.log("   街道底图: /api/tiles 同源代理（高德公开瓦片，无 Key，z 3—18，上游固定白名单域名）");
 });
