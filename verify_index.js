@@ -244,6 +244,18 @@ const stageChecks = {
                     html.indexOf('radView="map"; mapScale=1') >= 0 &&
                     html.indexOf('街道底图 + 等距投影点位图层（局部近似对齐）') >= 0 &&
                     html.indexOf('页面不直连任何地图域名、不携带地图 Key') >= 0,
+  '六类主体与互斥去重口径': html.indexOf('data-cat="4"') >= 0 &&
+                    html.indexOf('data-cat="8"') >= 0 &&
+                    html.indexOf('data-cat="16"') >= 0 &&
+                    html.indexOf('data-cat="32"') >= 0 &&
+                    html.indexOf('公办学校') >= 0 && html.indexOf('民办学校') >= 0 &&
+                    html.indexOf('宗教组织') >= 0 && html.indexOf('医院') >= 0 &&
+                    html.indexOf('#0f9e78') >= 0 && html.indexOf('#c0397a') >= 0 &&
+                    html.indexOf('#8a5a2b') >= 0 &&
+                    html.indexOf('var CAT_NAMES=') >= 0 && html.indexOf('var CAT_BITS=') >= 0 &&
+                    html.indexOf('公办学校与公立医院不再重复计入事业单位') >= 0 &&
+                    html.indexOf('各类别加总等于主体总数') >= 0 &&
+                    html.indexOf('五份含经纬度整合清单') >= 0,
   '点击图钉弹出单位主要信息卡': html.indexOf('id="pinModal"') >= 0 &&
                     html.indexOf('id="pinCard"') >= 0 &&
                     html.indexOf('function openPinCard(x)') >= 0 &&
@@ -256,6 +268,15 @@ const stageChecks = {
                     html.indexOf('data-pi') >= 0 && html.indexOf('data-close') >= 0 &&
                     html.indexOf('if(e.target===pinModal) closePinCard()') >= 0 &&
                     html.indexOf('点击彩色小图钉即弹出「单位主要信息」卡') >= 0,
+  '单位负责人与业务范围字段': html.indexOf('h:r[8]||""') >= 0 &&
+                    html.indexOf('b:r[9]||""') >= 0 &&
+                    html.indexOf('单位负责人') >= 0 &&
+                    html.indexOf('公开登记法定代表人，以官方任免为准') >= 0 &&
+                    html.indexOf('pin-card__scope') >= 0 &&
+                    html.indexOf('pin-card__scope-body') >= 0 &&
+                    html.indexOf('业务范围') >= 0 &&
+                    html.indexOf('esc(x.h||"未列示")') >= 0 &&
+                    html.indexOf('单位负责人（法定代表人）') >= 0,
   '街道底图同源瓦片代理': html.indexOf('var TILE_BASE =') >= 0 &&
                     html.indexOf('id="radTiles"') >= 0 &&
                     html.indexOf('id="radTileInner"') >= 0 &&
