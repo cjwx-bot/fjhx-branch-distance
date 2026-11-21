@@ -104,16 +104,20 @@ function computeNearest(lat, lng, n = 8) {
     }));
 }
 
-/** 可选：用腾讯地图 WebService 对注册地址做精确地理编码（需 MAP_KEY） */
+/** 可选：用高德 Web服务 API 对注册地址做精确地理编码（与 /api/geo 共用 MAP_KEY） */
 async function geocodeByMap(address, mapKey) {
-  if (!mapKey || !address) return null;
+  if (!mapKey || /Please apply|replace this placeholder/i.test(mapKey) || !address) return null;
   try {
-    const url = "https://apis.map.qq.com/ws/geocoder/v1/?address=" +
-      encodeURIComponent(address) + "&key=" + mapKey;
+    const url = "https://restapi.amap.com/v3/geocode/geo?address=" +
+      encodeURIComponent(address) + "&output=json&key=" + encodeURIComponent(mapKey);
     const r = await fetch(url);
     const j = await r.json();
-    if (j && j.status === 0 && j.result && j.result.location) {
-      return { lat: j.result.location.lat, lng: j.result.location.lng };
+    const g = j && String(j.status) === "1" && Array.isArray(j.geocodes) && j.geocodes[0];
+    if (g && g.location && /兴趣点|门牌号|楼宇|单元|房屋|道路|大厦|园区/.test(String(g.level || ""))) {
+      const parts = String(g.location).split(",").map(Number);
+      if (Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+        return { lng: parts[0], lat: parts[1] };
+      }
     }
   } catch (e) { /* 失败时回退到行政区划中心 */ }
   return null;
